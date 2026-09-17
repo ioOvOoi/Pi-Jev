@@ -35,3 +35,4 @@ Pi-Jev v0.1 装进 pi 可用：① /login 原生添加 Typesafe 平台 Key；②
 - npm 发布（用户已定 git 包即可；将来需要再立项）
 - 把 Jev 当聊天/文本生成模型接进 pi 模型槽（域上不可能：Jev 不生成文本）
 - Claude Code 等非 pi 环境的接入（官方 skill 渠道已覆盖）
+- [04 · 核心层设计](issues/04-core-design.md): 八项决策定稿（三 tool 批量签名 JSON+_lowConfidence；/jev=面板+试一枪；配置文件>env>默认、key 除外；低置信=conf<0.5 / |p−0.5|<0.2）；原型 prototype/core.ts 拍板通过
