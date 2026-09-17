@@ -25,7 +25,9 @@ Pi-Jev v0.1 装进 pi 可用：① /login 原生添加 Typesafe 平台 Key；②
 - [04 · 核心层设计](issues/04-core-design.md): 八项决策定稿（三 tool 批量签名 JSON+_lowConfidence；/jev=面板+试一枪；配置文件>env>默认、key 除外；低置信=conf<0.5 / |p−0.5|<0.2）；原型 prototype/core.ts 拍板通过
 - [05 · repo 骨架](issues/05-repo-skeleton.md): pi-jev 包 manifest + src/{index,config,auth}，pi install 本地路径入册；RPC 探针执行 /jev 面板成功 = 发现/加载/注册三证
 
-- [07 · 官方 skill 自动装/更新](issues/07-skill-updater.md): codeload tar.gz 取 skills/typesafe-ai 子树 + sha256 清单；installed/up-to-date/updated 三态 + 本地改动保护；\u002fjev-skill check|update\n\n## Not yet specified
+- [07 · 官方 skill 自动装/更新](issues/07-skill-updater.md): codeload tar.gz 取 skills/typesafe-ai 子树 + sha256 清单；installed/up-to-date/updated 三态 + 本地改动保护；/jev-skill check|update
+
+## Not yet specified
 
 - 二期：置信门控——ask-user-question 前置 Jev 判断，低置信问人、高置信自动；confidence 语义已明确（Choice/Score 自带、Noul 无 → 用原始概率阈值），官方三段阈值法（高=自动/中=确认/低=转人）；等 04 核心设计定下切片成票
 - 二期：loop-police / Monitor 空转检测——用 Score（空转等级）还是 Noul（卡死）待核心落地后定
