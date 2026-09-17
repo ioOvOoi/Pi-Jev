@@ -26,6 +26,7 @@ Pi-Jev v0.1 装进 pi 可用：① /login 原生添加 Typesafe 平台 Key；②
 - [05 · repo 骨架](issues/05-repo-skeleton.md): pi-jev 包 manifest + src/{index,config,auth}，pi install 本地路径入册；RPC 探针执行 /jev 面板成功 = 发现/加载/注册三证
 
 - [07 · 官方 skill 自动装/更新](issues/07-skill-updater.md): codeload tar.gz 取 skills/typesafe-ai 子树 + sha256 清单；installed/up-to-date/updated 三态 + 本地改动保护；/jev-skill check|update
+- [09 · Noul 把关（Authorizer Chain）](issues/09-permission-noul.md): ask 态触发链上 Noul —— pYes 距 0.5 超 margin 才 allow/deny，低置信或不可用一律 defer（守着不放行）；真 pi 进程四态（allow/deny/defer/无 key）日志留证
 
 ## Not yet specified
 

@@ -23,3 +23,5 @@ Blocked by: 01, 05
 **待复核（真人）**：TUI 内 `/login` 选 TypeSafe 输入真 key → `auth.json` 出现该 provider 条目。管道喂 stdin 驱不动 TUI（stdin 被当聊天消息），只能人工。
 
 —— 代码侧结题。
+
+（2026-09-17 复检）真 pi 进程里跑 `/jev`：凭据库与 env 皆无 key 时面板渲染 `key: ✗ 未配置 —— 运行 pi login 选 TypeSafe，或设 TYPESAFE_API_KEY`，即 missing 态符合预期（auth.json/env 两态证据见上）。真人 `/login` 一步仍未发生，故本票留 open。

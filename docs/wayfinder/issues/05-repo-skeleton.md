@@ -1,7 +1,7 @@
 # 05-repo-skeleton
 
 Type: task
-Status: open
+Status: closed
 
 ## Question
 
