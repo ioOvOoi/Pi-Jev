@@ -4,6 +4,7 @@ import { resolveKey } from "./auth.js";
 import { makeRunner, type JevToolResult } from "./core.js";
 import { registerJevTools } from "./tools.js";
 import { registerTypeSafeProvider } from "./provider.js";
+import { registerNoulAuthorizer, renderNoulLine } from "./permission.js";
 import {
   SKILL_DIR,
   checkSkill,
@@ -44,6 +45,7 @@ function renderPanel(
   cfg: JevConfig,
   key: string | null,
   source: string,
+  noulLine: string,
 ): string {
   const keyLine =
     source === "missing" || !key
@@ -55,6 +57,7 @@ function renderPanel(
     `  model:  ${cfg.model}   timeout: ${cfg.timeoutMs}ms   并发: ${cfg.maxConcurrent}`,
     `  低置信: choice<${cfg.lowConfidence.choice}  score<${cfg.lowConfidence.score}  noul±${cfg.lowConfidence.noulMargin}`,
     `  skill:  ${skillLine()}`,
+    `  把关:   ${noulLine}`,
     `  配置文件: ${CONFIG_PATH}（缺失=全默认；改后重启会话生效）`,
     "  试一枪: /jev <任意文本>（罐头 Noul 问题，只验证 key 与链路）",
   ].join("\n");
@@ -113,8 +116,7 @@ function skillNotice(
 /**
  * Pi-Jev 扩展入口。
  * 已挂：/login Typesafe provider · 三 tool（jev_noul/choice/score）· /jev 面板 + 试一枪
- *      · 官方 skill 自动安装/更新 + /jev-skill。
- * 待挂：t5 registerAuthorizer（Noul 把关）。
+ *      · 官方 skill 自动安装/更新 + /jev-skill · Noul 把关（Authorizer Chain，09 号票）。
  */
 export default async function jev(pi: ExtensionAPI): Promise<void> {
   registerTypeSafeProvider(pi); // async 工厂：registerProvider 在启动期 flush
@@ -125,10 +127,27 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
   const run = await makeRunner(cfg, resolveKey);
   registerJevTools(pi, run);
 
+  // 09 号票：Noul 把关。注册 ≠ 生效——用户还得在权限系统 config.json 里点名链名；
+  // 服务端没装或没激活时只提示，不影响插件其余功能
+  let notify: ((text: string, level: "info" | "warning" | "error") => void) | null =
+    null;
+  const noul = registerNoulAuthorizer(pi, {
+    cfg,
+    run,
+    enabled: cfg.permission.enabled,
+    debugPath: process.env.PI_JEV_PERM_LOG,
+    onMissing: (detail) =>
+      notify?.(
+        `Jev Noul 把关未挂上：${detail}（装 @gotgenes/pi-permission-system 后重启会话）`,
+        "warning",
+      ),
+  });
+
   // 07 号票：skill 同步走网络，绝不 await 进启动路径；结果留到 session_start 里提示
   const skillSync = syncSkill();
 
   pi.on("session_start", (_event, ctx) => {
+    notify = (text, level) => ctx.ui.notify(text, level);
     void skillSync.then((r) => {
       skillSnapshot = r;
       const notice = skillNotice(r);
@@ -178,7 +197,7 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
       const { key, source } = await resolveKey();
       if (!args.trim()) {
         ctx.ui.notify(
-          renderPanel(cfg, key, source),
+          renderPanel(cfg, key, source, renderNoulLine(noul.status())),
           source === "missing" ? "warning" : "info",
         );
         return;
