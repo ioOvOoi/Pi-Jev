@@ -8,10 +8,14 @@ const jsonMode = process.argv.includes("--json");
 const cfg = await loadConfig();
 const { key, source } = await resolveKey();
 if (!key) {
-  console.error("缺 key：先在 TUI 里 /login 选 TypeSafe，或设 TYPESAFE_API_KEY");
+  console.error(
+    "缺 key：先在 TUI 里 /login 选 TypeSafe，或设 TYPESAFE_API_KEY",
+  );
   process.exit(2);
 }
-console.log(`TypeSmoke · 实调 choice / score / noul · key 来源 ${source}（${key.slice(0, 4)}…${key.slice(-4)}）`);
+console.log(
+  `TypeSmoke · 实调 choice / score / noul · key 来源 ${source}（${key.slice(0, 4)}…${key.slice(-4)}）`,
+);
 
 const run = await makeRunner(cfg, resolveKey);
 
@@ -52,9 +56,10 @@ const CASES: Record<
     render: (a) => {
       const opt = String(a.choice);
       const label = (
-        (CASES.choice.args as { questions: Record<string, { options: Record<string, string | null> }> })
-          .questions.next.options[opt]
-      );
+        CASES.choice.args as {
+          questions: Record<string, { options: Record<string, string | null> }>;
+        }
+      ).questions.next.options[opt];
       return label ? `${opt}（${label}）` : opt;
     },
   },
@@ -71,8 +76,8 @@ const CASES: Record<
     },
     render: (a) => {
       const levels = (
-        (CASES.score.args as { questions: Record<string, { levels: string[] }> }).questions.danger.levels
-      );
+        CASES.score.args as { questions: Record<string, { levels: string[] }> }
+      ).questions.danger.levels;
       const v = Number(a.score);
       return levels[v] == null ? String(a.score) : `${v}（${levels[v]}）`;
     },
@@ -99,11 +104,18 @@ for (const type of ["choice", "score", "noul"] as JevType[]) {
   ok++;
   inTok += r.usage.input_tokens;
   outTok += r.usage.output_tokens;
-  const parts = Object.entries(r.answers).map(([qid, a]) => `${qid}：${describeAnswer(type, a as Record<string, unknown>)}`);
+  const parts = Object.entries(r.answers).map(
+    ([qid, a]) =>
+      `${qid}：${describeAnswer(type, a as Record<string, unknown>)}`,
+  );
   rows.push(`  [${type}] 通过 —— ${parts.join("；")}`);
 }
 
 console.log(rows.join("\n"));
 console.log(`\nusage 合计：输入 ${inTok} / 输出 ${outTok} token`);
-console.log(ok === 3 ? "\nLIVE_SMOKE_OK（3/3 通过）" : `\nLIVE_SMOKE_FAIL（${3 - ok}/3 失败）`);
+console.log(
+  ok === 3
+    ? "\nLIVE_SMOKE_OK（3/3 通过）"
+    : `\nLIVE_SMOKE_FAIL（${3 - ok}/3 失败）`,
+);
 process.exit(ok === 3 ? 0 : 1);

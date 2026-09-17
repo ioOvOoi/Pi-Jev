@@ -31,7 +31,8 @@ const describeSync = (r: SkillSyncResult): string => {
 
 const describeCheck = (r: SkillCheckResult): string => {
   if (r.status === "up-to-date") return "已是最新";
-  if (r.status === "update-available") return "远端有新版本（跑一次同步即可更新）";
+  if (r.status === "update-available")
+    return "远端有新版本（跑一次同步即可更新）";
   return "无法判断（网络或权限问题）";
 };
 
@@ -56,8 +57,15 @@ const chk = await checkSkill();
 console.log(`5) 检查更新 → ${describeCheck(chk)}`);
 console.log(`   SKILL_DIR：${SKILL_DIR}`);
 const st = await readSkillState();
-console.log(`   state：${SKILL_STATE_PATH}${st ? `（commit ${short(st.commit)}，装于 ${st.installedAt}）` : "（无）"}`);
+console.log(
+  `   state：${SKILL_STATE_PATH}${st ? `（commit ${short(st.commit)}，装于 ${st.installedAt}）` : "（无）"}`,
+);
 console.log(`   已装文件：${(await readdir(SKILL_DIR)).join("、")}`);
 console.log("   SKILL.md 前 6 行：");
-console.log((await readFile(join(SKILL_DIR, "SKILL.md"), "utf8")).split("\n").slice(0, 6).join("\n"));
+console.log(
+  (await readFile(join(SKILL_DIR, "SKILL.md"), "utf8"))
+    .split("\n")
+    .slice(0, 6)
+    .join("\n"),
+);
 if (s3.status === "error" || chk.status === "unknown") process.exit(1);
