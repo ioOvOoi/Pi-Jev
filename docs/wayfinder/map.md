@@ -25,7 +25,9 @@ Pi-Jev v0.1 装进 pi 可用：① /login 原生添加 Typesafe 平台 Key；②
 - [04 · 核心层设计](issues/04-core-design.md): 八项决策定稿（三 tool 批量签名 JSON+_lowConfidence；/jev=面板+试一枪；配置文件>env>默认、key 除外；低置信=conf<0.5 / |p−0.5|<0.2）；原型 prototype/core.ts 拍板通过
 - [05 · repo 骨架](issues/05-repo-skeleton.md): pi-jev 包 manifest + src/{index,config,auth}，pi install 本地路径入册；RPC 探针执行 /jev 面板成功 = 发现/加载/注册三证
 
+- [06 · login-key](issues/06-login-key.md): 不自造 /jev login；注册 pi 原生 provider（id=typesafe）→ key 由 pi 落 auth.json，解析顺序 auth.json → env TYPESAFE_API_KEY → missing；真人 /login 面板复核 ✓
 - [07 · 官方 skill 自动装/更新](issues/07-skill-updater.md): codeload tar.gz 取 skills/typesafe-ai 子树 + sha256 清单；installed/up-to-date/updated 三态 + 本地改动保护；/jev-skill check|update
+- [08 · 核心层实现](issues/08-core-impl.md): @typesafe-ai/sdk 直用；三 tool 批量签名（state + questions map）→ answers + usage + _lowConfidence；真端点批量冒烟通过（smoke:live）
 - [09 · Noul 把关（Authorizer Chain）](issues/09-permission-noul.md): ask 态触发链上 Noul —— pYes 距 0.5 超 margin 才 allow/deny，低置信或不可用一律 defer（守着不放行）；真 pi 进程四态（allow/deny/defer/无 key）日志留证
 
 ## Not yet specified
