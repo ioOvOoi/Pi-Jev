@@ -15,8 +15,8 @@ import {
 } from "./skill.js";
 
 /** /jev <文本> 的罐头试一枪问题（04 号票 Q3：只为验证 key 与链路） */
-const SMOKE_QUESTION = {
-  smoke: { question: "这段文本是否描述了需要立即处理的问题？" },
+const PROBE_QUESTION = {
+  probe: { question: "这段文本是否描述了需要立即处理的问题？" },
 };
 
 /** 后台 skill 同步的最近结果：面板与 /jev-skill 都读它，别每次重跑网络 */
@@ -149,6 +149,10 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
 
   pi.on("session_start", (_event, ctx) => {
     notify = (text, level) => ctx.ui.notify(text, level);
+    ctx.ui.notify(
+      "Jev 已挂载 —— /jev 状态面板 · /jev <文本> 试一枪 · /jev-skill 管理官方 skill",
+      "info",
+    );
     void skillSync.then((r) => {
       skillSnapshot = r;
       const notice = skillNotice(r);
@@ -203,13 +207,32 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
         );
         return;
       }
+      const t0 = Date.now();
       const result: JevToolResult = await run("noul", {
         state: args,
-        questions: SMOKE_QUESTION,
+        questions: PROBE_QUESTION,
       });
+      const ms = Date.now() - t0;
+      if ("error" in result) {
+        const hint = result.error.hint ? `（${result.error.hint}）` : "";
+        ctx.ui.notify(
+          `Jev 试一枪失败 —— ${result.error.code}: ${result.error.message}${hint}`,
+          "error",
+        );
+        return;
+      }
+      const a = Object.values(result.answers)[0] as
+        | { noul?: number; _lowConfidence?: boolean }
+        | undefined;
+      const pct =
+        a && typeof a.noul === "number"
+          ? `${Math.round(a.noul * 100)}%`
+          : "未知";
+      const low = a?._lowConfidence ? " · 低置信" : "";
+      const quote = args.length > 20 ? `${args.slice(0, 20)}…` : args;
       ctx.ui.notify(
-        JSON.stringify(result, null, 2),
-        "error" in result ? "error" : "info",
+        `Jev 试一枪（「${quote}」）：${pct}${low}\nkey：${source} · 输入 ${result.usage.input_tokens} / 输出 ${result.usage.output_tokens} token · ${ms}ms`,
+        "info",
       );
     },
   });
