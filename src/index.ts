@@ -1,13 +1,16 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { loadConfig, CONFIG_PATH } from "./config.js";
 import { resolveKey } from "./auth.js";
+import { registerTypeSafeProvider } from "./provider.js";
 
 /**
- * Pi-Jev 扩展入口（05 号票骨架）。
- * 已挂：/jev 状态面板。
- * 待挂：t2 registerProvider(/login) · t3 三 tool 真实现 · t5 registerAuthorizer。
+ * Pi-Jev 扩展入口。
+ * 已挂：/login Typesafe provider（t2）· /jev 状态面板。
+ * 待挂：t3 三 tool 真实现 · t5 registerAuthorizer。
  */
 export default async function jev(pi: ExtensionAPI): Promise<void> {
+  registerTypeSafeProvider(pi); // async 工厂：registerProvider 在启动期 flush
+
   pi.registerCommand("jev", {
     description: "Jev (TypeSafe System One) 状态面板；/jev <文本> 试一枪",
     handler: async (args, ctx) => {
@@ -15,7 +18,7 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
       const { key, source } = await resolveKey();
       const keyLine =
         source === "missing"
-          ? "✗ 未配置 —— pi login 选 TypeSafe，或设 TYPESAFE_API_KEY"
+          ? "✗ 未配置 —— 运行 pi login 选 TypeSafe，或设 TYPESAFE_API_KEY"
           : `✓ ${source}（${key!.slice(0, 6)}…${key!.slice(-4)}）`;
       if (!args.trim()) {
         ctx.ui.notify(
