@@ -22,6 +22,7 @@ Pi-Jev v0.1 装进 pi 可用：① /login 原生添加 Typesafe 平台 Key；②
 - [02 typesafe-api-sdk](docs/wayfinder/issues/02-typesafe-api-sdk.md): 单端点 POST /v1/systemone，questions map 一次并行多问；官方 JS SDK @typesafe-ai/sdk 自带重试与类型，推荐 SDK 直用；Choice/Score 带 confidence，Noul 不带
 - [03 permission-system-api](docs/wayfinder/issues/03-permission-system-api.md): 有一等接入点 Authorizer Chain（registerAuthorizer + config authorizerChain），Noul 概率→allow/deny/defer，仅 ask 态触发
 
+- [04 · 核心层设计](issues/04-core-design.md): 八项决策定稿（三 tool 批量签名 JSON+_lowConfidence；/jev=面板+试一枪；配置文件>env>默认、key 除外；低置信=conf<0.5 / |p−0.5|<0.2）；原型 prototype/core.ts 拍板通过
 ## Not yet specified
 
 - 二期：置信门控——ask-user-question 前置 Jev 判断，低置信问人、高置信自动；confidence 语义已明确（Choice/Score 自带、Noul 无 → 用原始概率阈值），官方三段阈值法（高=自动/中=确认/低=转人）；等 04 核心设计定下切片成票
@@ -35,4 +36,3 @@ Pi-Jev v0.1 装进 pi 可用：① /login 原生添加 Typesafe 平台 Key；②
 - npm 发布（用户已定 git 包即可；将来需要再立项）
 - 把 Jev 当聊天/文本生成模型接进 pi 模型槽（域上不可能：Jev 不生成文本）
 - Claude Code 等非 pi 环境的接入（官方 skill 渠道已覆盖）
-- [04 · 核心层设计](issues/04-core-design.md): 八项决策定稿（三 tool 批量签名 JSON+_lowConfidence；/jev=面板+试一枪；配置文件>env>默认、key 除外；低置信=conf<0.5 / |p−0.5|<0.2）；原型 prototype/core.ts 拍板通过
