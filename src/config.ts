@@ -19,20 +19,39 @@ export const DEFAULTS: JevConfig = {
 
 export const CONFIG_PATH = join(homedir(), ".pi", "agent", "pi-jev.json");
 
-/** 04 号票 Q6：配置文件显式字段 > env(PI_JEV_*) > 内置默认；文件缺失=全默认 */
-export async function loadConfig(): Promise<JevConfig> {
+/** 只认有限数：env 里写了 "abc" 这类脏值不该把 timeout 变成 NaN 交给 SDK */
+const num = (v: unknown): number | undefined =>
+  typeof v === "number" && Number.isFinite(v) ? v : undefined;
+
+/**
+ * 04 号票 Q6：配置文件显式字段 > env(PI_JEV_*) > 内置默认；文件缺失=全默认。
+ * key 不在此链（见 auth.ts）。
+ * opts.path 仅为测试注入，生产走 CONFIG_PATH。
+ */
+export async function loadConfig(
+  opts: { path?: string } = {},
+): Promise<JevConfig> {
   const cfg: JevConfig = structuredClone(DEFAULTS);
-  if (process.env.PI_JEV_MODEL) cfg.model = process.env.PI_JEV_MODEL;
-  if (process.env.PI_JEV_TIMEOUT) cfg.timeoutMs = Number(process.env.PI_JEV_TIMEOUT);
-  if (process.env.PI_JEV_MAX_CONCURRENT) cfg.maxConcurrent = Number(process.env.PI_JEV_MAX_CONCURRENT);
+  const env = (k: string) => num(Number(process.env[k]));
+  cfg.model = process.env.PI_JEV_MODEL || cfg.model;
+  cfg.timeoutMs = env("PI_JEV_TIMEOUT") ?? cfg.timeoutMs;
+  cfg.maxConcurrent = env("PI_JEV_MAX_CONCURRENT") ?? cfg.maxConcurrent;
   try {
-    const file = JSON.parse(await readFile(CONFIG_PATH, "utf8")) as Partial<JevConfig>;
-    if (file.model != null) cfg.model = file.model;
-    if (file.timeoutMs != null) cfg.timeoutMs = file.timeoutMs;
-    if (file.maxConcurrent != null) cfg.maxConcurrent = file.maxConcurrent;
-    if (file.lowConfidence) Object.assign(cfg.lowConfidence, file.lowConfidence);
+    const file = JSON.parse(
+      await readFile(opts.path ?? CONFIG_PATH, "utf8"),
+    ) as Partial<JevConfig>;
+    if (typeof file.model === "string" && file.model) cfg.model = file.model;
+    cfg.timeoutMs = num(file.timeoutMs) ?? cfg.timeoutMs;
+    cfg.maxConcurrent = num(file.maxConcurrent) ?? cfg.maxConcurrent;
+    const lc = file.lowConfidence;
+    if (lc) {
+      cfg.lowConfidence.choice = num(lc.choice) ?? cfg.lowConfidence.choice;
+      cfg.lowConfidence.score = num(lc.score) ?? cfg.lowConfidence.score;
+      cfg.lowConfidence.noulMargin =
+        num(lc.noulMargin) ?? cfg.lowConfidence.noulMargin;
+    }
   } catch {
-    // 文件缺失或坏 JSON = 默认，正常路径
+    // 文件缺失或坏 JSON = 全默认，正常路径
   }
   return cfg;
 }

@@ -13,33 +13,38 @@ export const TYPESAFE_PROVIDER_ID = "typesafe";
  * 走 pi 原生交互收 key 并落 auth.json（{[id]:{type:"api_key",key}}）。
  */
 export function registerTypeSafeProvider(pi: ExtensionAPI): void {
-  pi.registerProvider(
-    createProvider({
-      id: TYPESAFE_PROVIDER_ID,
-      name: "TypeSafe (Jev)",
-      baseUrl: TYPESAFE_BASE_URL,
-      auth: {
-        apiKey: {
-          name: "TypeSafe API key",
-          async login(interaction) {
-            return {
-              type: "api_key",
-              key: await interaction.prompt({
-                type: "secret",
-                message: "TypeSafe API key（console.typesafe.ai → API keys）",
-              }),
-            };
-          },
-          async resolve({ credential }) {
-            // 只有存了 key 才算命中本 provider，否则交给 pi 的后续凭证链（env 等）
-            return credential?.key ? { auth: { apiKey: credential.key }, source: "auth.json" } : undefined;
-          },
-        },
-      },
-      models: [],
-      // Jev 非聊天模型（models 空），此 api 仅为满足 createProvider 契约
-      api: openAICompletionsApi(),
-
-    }),
-  );
+    pi.registerProvider(
+        createProvider({
+            id: TYPESAFE_PROVIDER_ID,
+            name: "TypeSafe (Jev)",
+            baseUrl: TYPESAFE_BASE_URL,
+            auth: {
+                apiKey: {
+                    name: "TypeSafe API key",
+                    async login(interaction) {
+                        return {
+                            type: "api_key",
+                            key: await interaction.prompt({
+                                type: "secret",
+                                message:
+                                    "TypeSafe API key（console.typesafe.ai → API keys）",
+                            }),
+                        };
+                    },
+                    async resolve({ credential }) {
+                        // 只有存了 key 才算命中本 provider，否则交给 pi 的后续凭证链（env 等）
+                        return credential?.key
+                            ? {
+                                  auth: { apiKey: credential.key },
+                                  source: "auth.json",
+                              }
+                            : undefined;
+                    },
+                },
+            },
+            models: [],
+            // Jev 非聊天模型（models 空），此 api 仅为满足 createProvider 契约
+            api: openAICompletionsApi(),
+        }),
+    );
 }

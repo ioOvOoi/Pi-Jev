@@ -12,6 +12,7 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": [
-    "src"
+    "src",
+    "test"
   ]
 }
