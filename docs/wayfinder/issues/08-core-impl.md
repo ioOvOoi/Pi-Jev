@@ -23,3 +23,5 @@ Blocked by: 04, 05
 - noul：`{ noul: 0.81 }`（离 0.5 超 margin，未标）
 
 即结构化答案 + 概率分布 + 低置信标记 + usage 在真端点下全部成立，本票结题。
+
+**`/jev` 试一枪复核 ✓（2026-09-17）**：真 pi 进程（`pi --mode rpc -e …/src/index.ts`）执行 `/jev 今晚先写文档还是先改代码`，通知里回来 `{ answers: { smoke: { type: "noul", noul: 0.18 } }, usage: { input_tokens: 297, output_tokens: 21 }, _keySource: "auth.json" }`（0.18 离 0.5 超 margin，未标低置信）——面板 → 试一枪 → 真端点全链路通。
