@@ -1,57 +1,133 @@
 # Pi-Jev
 
-把 [TypeSafe](https://console.typesafe.ai) 的 **Jev（System One）** 决策模型接进 pi：三个类型化决策工具、`/jev` 面板、官方 skill 自动安装与更新，以及让 Noul 在权限链上把关。
+Bring **TypeSafe Jev (System One)** — a calibrated, non-generative decision model — into [pi](https://github.com/earendil-works/pi). Three typed decision tools, a `/jev` panel, the official TypeSafe skill auto-installed and auto-updated, and Noul as a permission-chain authorizer.
 
-术语与语义见 [CONTEXT.md](CONTEXT.md)；架构决策见 [docs/wayfinder/map.md](docs/wayfinder/map.md)。
+**中文文档 → [README.zh-CN.md](README.zh-CN.md)**
 
-## 安装
+| | |
+|---|---|
+| Terms & semantics | [CONTEXT.md](CONTEXT.md) — glossary of Jev, state, questions, probability vs confidence |
+| Design decisions | [docs/wayfinder/map.md](docs/wayfinder/map.md) — the map and its 9 decision tickets |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) |
+
+---
+
+## What Jev is (and is not)
+
+You hand Jev a **state** (a string, object or array — the text/JSON to be judged) plus one or more **typed questions**, and it returns structured judgements with probabilities:
+
+- **noul** — a yes/no question → `noul`: the probability of “yes”.
+- **choice** — pick one from an explicit option set → the choice, the full probability distribution, and `confidence`.
+- **score** — rate along ordered levels → a probability-weighted score, per-level probabilities, and `confidence`.
+
+Jev does not generate prose and does not chat. `confidence` is a statistic of the distribution's *shape* (peaked = high), and **noul answers carry no confidence** — which is why low-confidence detection differs per type (see below).
+
+## Install
+
+Requires pi and Node ≥ 20.
 
 ```bash
-pi install /absolute/path/to/Pi-Jev       # 本地路径
-pi install git:github.com/ioOvOoi/Pi-Jev  # 或 git 源
+# Recommended: git source, follows main, updates with pi
+pi install git:github.com/ioOvOoi/Pi-Jev@main
+
+# Pin a release instead
+pi install git:github.com/ioOvOoi/Pi-Jev@v0.1.0
+
+# Local development
+pi install /absolute/path/to/Pi-Jev
 ```
 
-装完 pi 启动时加载 `src/index.ts`（`package.json` 的 `pi.extensions`）。
+There is **no build step**: pi loads `./src/index.ts` directly, and pi's own `npm install` on checkout installs the single runtime dependency (`@typesafe-ai/sdk`). Updating is `pi update --extensions` (reconciles the clone with `main`).
 
-## 凭证
+## Credentials
 
-key 走 pi 原生凭证链，**永不进配置文件**：
+The API key travels pi's native credential chain and **never enters the config file**:
 
-1. `/login` → 选 **TypeSafe (Jev)** → 贴 API key；pi 落到 `~/.pi/agent/auth.json`
-2. 或设环境变量 `TYPESAFE_API_KEY`
+1. `/login` → choose **TypeSafe (Jev)** → paste the key from [console.typesafe.ai](https://console.typesafe.ai) → pi stores it in `~/.pi/agent/auth.json`
+2. or set `TYPESAFE_API_KEY`
 
-`/jev` 面板首行显示当前 key 来源（`auth.json` / `env` / `missing`）。
+Resolution order: `auth.json` → `TYPESAFE_API_KEY` → missing. `/jev` shows which source is in use. Missing keys never throw: tools return `{ error: { code: "auth", ... } }`.
 
-## 三个工具
+## Tools
 
-| 工具 | 语义 | 返回 |
+All three tools are **batched**: one `state` plus a map of questions keyed by id; answers come back under the same ids, spending one request no matter how many questions you ask (capped by `maxConcurrent`).
+
+| Tool | Returns |
+|---|---|
+| `jev_noul` | `{ answers: { [id]: { type, noul, _lowConfidence? } }, usage }` |
+| `jev_choice` | `{ answers: { [id]: { type, choice, probabilities, confidence, _lowConfidence? } }, usage }` |
+| `jev_score` | `{ answers: { [id]: { type, score, probabilities, confidence, legend, _lowConfidence? } }, usage }` |
+
+```jsonc
+// jev_choice input
+{
+  "state": "用户要求把旧产物全删掉，仓库里还有未提交的改动",
+  "questions": {
+    "next": {
+      "question": "下一步最该做什么？",
+      "options": { "list": "先列目录看清现状", "del": "直接删掉旧产物", "ask": "先问用户" }
+    }
+  }
+}
+
+// real response (api.typesafe.ai)
+{
+  "answers": {
+    "next": { "type": "choice", "choice": "list", "confidence": 0.81,
+      "probabilities": { "list": 0.87, "del": 0, "ask": 0.13 } }
+  },
+  "usage": { "input_tokens": 362, "output_tokens": 38 },
+  "_keySource": "auth.json"
+}
+```
+
+**Low confidence.** `_lowConfidence: true` is a hint, not a different answer:
+
+| Type | Flag when | Default |
 |---|---|---|
-| `jev_noul` | 是否题，返回 yes 概率 | `{ answers: { [id]: { type, noul, _lowConfidence? } }, usage }` |
-| `jev_choice` | 在选项集（≥2）中选一 | `{ answers: { [id]: { type, choice, probabilities, confidence, _lowConfidence? } }, usage }` |
-| `jev_score` | 沿有序档位打分 | 同上，`score` 替代 `choice` |
+| `choice` / `score` | `confidence` below threshold | `0.5` |
+| `noul` | probability sits within `0.5 ± noulMargin` | `0.2` |
 
-- 每个工具都是**批量**：`state`（string/object/array，必须显式传入，插件不自动读会话）+ `questions`（`{ [id]: {...} }`），答案按同一 id 返回。
-- `_lowConfidence`：choice/score 看 `confidence`（默认 < 0.5）；noul 看概率是否落在 `0.5 ± noulMargin`（默认 0.2）。只是提示，不改答案。
-- 失败不抛异常，返回 `{ error: { code, message, hint? } }` 包络。
+**Errors never throw.** Failures come back as `{ error: { code, message, hint? } }` with codes such as `auth`, `rate_limit`, `timeout`, `bad_response`, `network`.
 
-## 命令
+## Commands
 
-- `/jev` —— 状态面板（key 来源、模型、端点、权限链、skill 状态）
-- `/jev <文本>` —— 试一枪：对这段文本跑一次 Noul
-- `/jev-skill` —— skill 状态；`/jev-skill check` 查更新；`/jev-skill update` 强制同步
+| Command | What it does |
+|---|---|
+| `/jev` | Status panel: key source, model, endpoint, thresholds, concurrency, permission-chain state, skill state, config path |
+| `/jev <text>` | One shot: runs the canned Noul question against that text (smoke test for key + chain) |
+| `/jev-skill` | Official skill status |
+| `/jev-skill check` | Compare local skill against upstream (`up-to-date` / `update-available`) |
+| `/jev-skill update` | Force sync from upstream |
 
-### 官方 skill
+Sample panel:
 
-插件把 TypeSafe 官方 skill（`typesafe-ai/skills` 的 `skills/typesafe-ai` 子树）装到 `~/.pi/agent/skills/typesafe-ai`，清单与版本号记在 `~/.pi/agent/pi-jev-skill.json`：
+```
+Jev (TypeSafe System One) 状态
+   key:    ✓ auth.json（apikey…3ba9）
+   model:  jev-latest   timeout: 30000ms   并发: 4
+   低置信: choice<0.5  score<0.5  noul±0.2
+   skill:  ✓ 已是最新 65a39f3
+   把关:   已挂链 jev-noul（会话 1） · 激活状态未知 · 最近：无
+   配置文件: ~/.pi/agent/pi-jev.json（缺失=全默认；改后重启会话生效）
+   试一枪: /jev <任意文本>（罐头 Noul 问题，只验证 key 与链路）
+```
 
-- 启动时自动同步（网络调用不阻塞启动，结果在会话开始时提示）
-- 首次 = `installed`；上游没动 = `up-to-date`（只发一次 HEAD）；上游变了 = `updated`
-- 本地改过 → `local-edits`，不覆盖；`/jev-skill update` 才覆盖
-- 上游布局变了（找不到 SKILL.md）→ `error`，宁可吵也不静默装个残的
+## Official skill, auto-installed
 
-## 配置
+On startup the plugin syncs the official TypeSafe skill — the `skills/typesafe-ai` subtree of [`typesafe-ai/skills`](https://github.com/typesafe-ai/skills) — into `~/.pi/agent/skills/typesafe-ai` (pi discovers it automatically), recording commit + per-file sha256 in `~/.pi/agent/pi-jev-skill.json`. The network call never blocks startup; the result is announced at session start.
 
-可选文件 `~/.pi/agent/pi-jev.json`（不存在或坏 JSON = 全默认）：
+| Status | Meaning |
+|---|---|
+| `installed` | First sync: files written, manifest recorded |
+| `up-to-date` | Upstream unchanged (single HEAD request) |
+| `updated` | Upstream moved: files and manifest refreshed |
+| `local-edits` | Local files modified → never overwritten until `/jev-skill update` |
+| `error` | Upstream layout changed (no `SKILL.md`): loud failure rather than a broken install |
+
+## Configuration
+
+Optional file `~/.pi/agent/pi-jev.json` (missing or malformed = all defaults):
 
 ```json
 {
@@ -63,22 +139,55 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 }
 ```
 
-优先级：**配置文件显式字段 > 环境变量 > 内置默认**（key 不在链上，见「凭证」）。
-env：`PI_JEV_MODEL`、`PI_JEV_TIMEOUT`、`PI_JEV_MAX_CONCURRENT`、`PI_JEV_PERMISSION`（只认明确的真/假词，脏值当没写）。
+Priority: **explicit config field > environment variable > built-in default** (the key is deliberately outside this chain).
 
-## Noul 把关（权限链）
+| Env | Effect |
+|---|---|
+| `PI_JEV_MODEL` | Model name |
+| `PI_JEV_TIMEOUT` | Request timeout (ms) |
+| `PI_JEV_MAX_CONCURRENT` | Batch concurrency cap |
+| `PI_JEV_PERMISSION` | `1/true/on/yes` or `0/false/off/no` to enable/disable Noul gating |
+| `TYPESAFE_API_KEY` | Credential fallback |
 
-装了 `@gotgenes/pi-permission-system` 后，插件把 Noul 注册成 **Authorizer Chain** 的一环：只在该请求处于 `ask` 态、且链上点名它时才触发，用 Jev 的 yes 概率判决——
+Dirty values (`PI_JEV_TIMEOUT=abc`) are ignored rather than poisoning the config.
 
-- 概率离 0.5 超过 margin → `allow` / `deny`
-- 低置信，或 Jev 不可用（无 key / 超时）→ `defer`，交回原链（**守着不放行**）
+## Noul as a permission authorizer
 
-要它生效：把 Noul 加进权限系统的 `authorizerChain`，并保持 `permission.enabled`（或 `PI_JEV_PERMISSION=1`）。
+With [`@gotgenes/pi-permission-system`](https://www.npmjs.com/package/@gotgenes/pi-permission-system) installed, the plugin registers Noul as a link in the **Authorizer Chain**. It is consulted only when a request reaches the `ask` state *and* the chain names it:
 
-## 开发
+- probability more than `margin` away from 0.5 → `allow` / `deny`
+- low confidence, or Jev unavailable (no key / timeout) → `defer`, handing the decision back to the original chain — **it never silently lets something through**
+
+To activate it, add `Noul` to the permission system's `authorizerChain` and keep `permission.enabled` (or `PI_JEV_PERMISSION=1`). Registration alone does not gate anything; the panel shows whether the chain actually named it.
+
+## Maintenance & CI
+
+- **No build artifacts**: the entry point is TypeScript, executed by pi. Nothing to publish, nothing to go stale.
+- **Auto-update**: installed from `git:…@main`, `pi update --extensions` re-fetches and re-installs dependencies.
+- **CI** (`.github/workflows/ci.yml`) runs on every push/PR: typecheck + the 30 unit tests (fake HTTP endpoint, no API key needed) + `npm pack --dry-run` to validate the published file list.
+
+## Development
 
 ```bash
-npm test           # tsx --test：30 项单测（假端点，不打真网络）
-npm run typecheck  # tsc 0 错
-npm run smoke:live # 真端点冒烟：三 tool 各一发（需要 key）
+npm install
+npm run typecheck   # tsc, 0 errors expected
+npm test            # 30 tests via tsx --test, no network, no key
+npm run smoke:live  # real endpoint: one batch call per tool (needs a key)
+npm run smoke:skill # real network: upstream skill check/sync
 ```
+
+Layout:
+
+```
+src/            index.ts (extension entry) · client.ts (SDK) · core.ts (runner) · tools.ts ·
+                config.ts · auth.ts · provider.ts (/login provider) · skill.ts · permission.ts
+test/           unit tests + fake-endpoint.ts (no network)
+scripts/        smoke:live / smoke:skill probes
+docs/wayfinder/ the decision map and its 9 tickets
+prototype/      the pinned core-layer prototype from ticket 04
+research/       upstream API / provider-login / permission-system findings
+```
+
+## License
+
+MIT © ioOvOoi
