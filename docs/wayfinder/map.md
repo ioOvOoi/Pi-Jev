@@ -9,19 +9,22 @@ Pi-Jev v0.1 装进 pi 可用：① /login 原生添加 Typesafe 平台 Key；②
 ## Notes
 
 - 领域：pi 扩展（TypeScript）。Jev = TypeSafe 的 System One 决策模型：输入 state + 类型化问题，返回 Choice/Score/Noul 结构化判断（含概率+置信度），不生成文本、不做对话。
-- 关键事实：API POST <https://api.typesafe.ai/v1/systemone，Authorization>: Bearer <KEY>，key 在 console.typesafe.ai/keys；官方 skill 在 github.com/typesafe-ai/skills（skills/typesafe-ai/SKILL.md，MIT）；pi 的 key 存 ~/.pi/agent/provider-keys.json（{[providerId]:{activeKeyName,keys:[{name,apiKey}]}}）；活文档 docs.typesafe.ai/llms.txt（页面加 .md 后缀可抓 Markdown）。
+- 关键事实：API POST <https://api.typesafe.ai/v1/systemone，Authorization>: Bearer <KEY>，key 在 console.typesafe.ai/keys；官方 skill 在 github.com/typesafe-ai/skills（skills/typesafe-ai/SKILL.md，MIT）；pi 的 key 存 ~/.pi/agent/auth.json（{[providerId]:{type:"api_key",key}}，FileAuthStorageBackend）；provider-keys.json 是第三方 zai 工具的旁路记录，pi 鉴权链不读它；活文档 docs.typesafe.ai/llms.txt（页面加 .md 后缀可抓 Markdown）。
 - 使用点分期（用户已批 1–6 全部）：v0.1 = ①核心层 ③permission-system；二期 = ②置信门控 ⑤loop-police；三期 = ④freerouter ⑥fabric/staffs。
+- 官方 skill 安装法（喂 07 号票）：npx skills add typesafe-ai/skills --skill typesafe-ai；源 repo github.com/typesafe-ai/skills，skill 文件 skills/typesafe-ai/SKILL.md，更新即比对 GitHub main 后替换
 - 包形态：git 包不发 npm；开发子模块挂 selfex/Pi-Jev（MyPi 仓库）。
 - 本 tracker 由用户指定放本仓库 docs/wayfinder/，工单在 docs/wayfinder/issues/；研究产出写 research/（用文件而非 research/<name> 分支，简化）。
 - 工作会话按票类型调用 skill：research→"research"，原型→"prototype"，访谈/评审→"grilling"+"domain-modeling"。
 
 ## Decisions so far
 
-（图刚立；研究票 pi-provider-login-api、typesafe-api-sdk、permission-system-api 派发中）
+- [01 pi-provider-login-api](docs/wayfinder/issues/01-pi-provider-login-api.md): TypeSafe 可注册为 /login 原生 provider（registerProvider+auth.apiKey.login），key 由 pi 落 auth.json；provider-keys.json 是第三方旁路文件，pi 不读
+- [02 typesafe-api-sdk](docs/wayfinder/issues/02-typesafe-api-sdk.md): 单端点 POST /v1/systemone，questions map 一次并行多问；官方 JS SDK @typesafe-ai/sdk 自带重试与类型，推荐 SDK 直用；Choice/Score 带 confidence，Noul 不带
+- [03 permission-system-api](docs/wayfinder/issues/03-permission-system-api.md): 有一等接入点 Authorizer Chain（registerAuthorizer + config authorizerChain），Noul 概率→allow/deny/defer，仅 ask 态触发
 
 ## Not yet specified
 
-- 二期：置信门控——ask-user-question 前置 Jev 判断，低置信问人、高置信自动；等核心层置信度语义稳定后才能切片成票
+- 二期：置信门控——ask-user-question 前置 Jev 判断，低置信问人、高置信自动；confidence 语义已明确（Choice/Score 自带、Noul 无 → 用原始概率阈值），官方三段阈值法（高=自动/中=确认/低=转人）；等 04 核心设计定下切片成票
 - 二期：loop-police / Monitor 空转检测——用 Score（空转等级）还是 Noul（卡死）待核心落地后定
 - 三期：freerouter 意图路由 Choice 化
 - 三期：fabric/staffs——派发角色路由（Choice: explorer/librarian/fixer/…）与 council 复核 fan-out
