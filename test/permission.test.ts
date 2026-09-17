@@ -58,7 +58,10 @@ const errRunner: JevRunner = (async () => ({
 })) as unknown as JevRunner;
 
 test("pickValue：命令 > 路径 > target > value > 预览", () => {
-  assert.equal(pickValue({ command: " rm -rf /tmp ", path: "/x" }), "rm -rf /tmp");
+  assert.equal(
+    pickValue({ command: " rm -rf /tmp ", path: "/x" }),
+    "rm -rf /tmp",
+  );
   assert.equal(pickValue({ path: "/x", value: "v" }), "/x");
   assert.equal(pickValue({ toolInputPreview: "p" }), "p");
   assert.equal(pickValue({}), "");
@@ -78,31 +81,44 @@ test("buildQuestion：带上工具名与具体内容，不留猜的空间", () =
   assert.equal(q.trueMeans.includes("放行"), true);
   assert.equal(q.falseMeans.includes("拦截"), true);
   // 超长输入截断，别把整个文件塞给 Jev
-  assert.equal(buildQuestion({ command: "x".repeat(5000) }).question.length < 2000, true);
+  assert.equal(
+    buildQuestion({ command: "x".repeat(5000) }).question.length < 2000,
+    true,
+  );
 });
 
 test("verdictFrom：概率映射 + 低置信/失败一律 defer", () => {
   const m = DEFAULTS.lowConfidence.noulMargin; // 0.2
-  assert.deepEqual(verdictFrom({ ok: true, pYes: 0.9, lowConfidence: false }, m), {
-    kind: "allow",
-  });
-  const deny = verdictFrom(
-    { ok: true, pYes: 0.05, lowConfidence: false },
-    m,
-    { command: "rm -rf /" },
+  assert.deepEqual(
+    verdictFrom({ ok: true, pYes: 0.9, lowConfidence: false }, m),
+    {
+      kind: "allow",
+    },
   );
+  const deny = verdictFrom({ ok: true, pYes: 0.05, lowConfidence: false }, m, {
+    command: "rm -rf /",
+  });
   assert.equal(deny.kind, "deny");
   assert.match((deny as { reason: string }).reason, /0\.05/);
   assert.match((deny as { reason: string }).reason, /rm -rf/);
-  assert.deepEqual(verdictFrom({ ok: true, pYes: 0.5, lowConfidence: false }, m), {
-    kind: "defer",
-  });
-  assert.deepEqual(verdictFrom({ ok: true, pYes: 0.65, lowConfidence: false }, m), {
-    kind: "defer",
-  }); // 0.5+0.2 才放行
-  assert.deepEqual(verdictFrom({ ok: true, pYes: 0.95, lowConfidence: true }, m), {
-    kind: "defer",
-  });
+  assert.deepEqual(
+    verdictFrom({ ok: true, pYes: 0.5, lowConfidence: false }, m),
+    {
+      kind: "defer",
+    },
+  );
+  assert.deepEqual(
+    verdictFrom({ ok: true, pYes: 0.65, lowConfidence: false }, m),
+    {
+      kind: "defer",
+    },
+  ); // 0.5+0.2 才放行
+  assert.deepEqual(
+    verdictFrom({ ok: true, pYes: 0.95, lowConfidence: true }, m),
+    {
+      kind: "defer",
+    },
+  );
   assert.deepEqual(verdictFrom({ ok: false, note: "auth: 未配置 key" }, m), {
     kind: "defer",
   });
@@ -120,7 +136,14 @@ test("outcomeOf：读概率与低置信，错误包络不当成结论", () => {
   const e = outcomeOf({ error: { code: "auth", message: "无 key" } });
   assert.equal(e.ok, false);
   assert.match(e.ok === false ? e.note : "", /auth/);
-  assert.equal(outcomeOf({ answers: {}, usage: { input_tokens: 0, output_tokens: 0 }, _keySource: "env" }).ok, false);
+  assert.equal(
+    outcomeOf({
+      answers: {},
+      usage: { input_tokens: 0, output_tokens: 0 },
+      _keySource: "env",
+    }).ok,
+    false,
+  );
 });
 
 test("registerNoulAuthorizer：ready 重复只挂一次，判决走 Jev 概率", async () => {
@@ -144,8 +167,14 @@ test("registerNoulAuthorizer：ready 重复只挂一次，判决走 Jev 概率",
     }),
   });
 
-  await emit("permissions:ready", { sessionId: "s1", adjudicatesLocally: true });
-  await emit("permissions:ready", { sessionId: "s1", adjudicatesLocally: true });
+  await emit("permissions:ready", {
+    sessionId: "s1",
+    adjudicatesLocally: true,
+  });
+  await emit("permissions:ready", {
+    sessionId: "s1",
+    adjudicatesLocally: true,
+  });
   assert.equal(regs.length, 1);
   assert.equal(regs[0].name, LINK_NAME);
 
@@ -175,11 +204,7 @@ test("registerNoulAuthorizer：authorize 回调 → Jev 判决 + 日志", async 
   for (const c of cases) {
     const { pi, emit } = fakePi();
     let authorize:
-      | ((
-          d: unknown,
-          q: unknown,
-          l: unknown,
-        ) => Promise<AuthorizerVerdict>)
+      | ((d: unknown, q: unknown, l: unknown) => Promise<AuthorizerVerdict>)
       | undefined;
     const reviews: string[] = [];
     registerNoulAuthorizer(pi, {

@@ -145,7 +145,11 @@ test("tar 解析：目录项跳过、pax 长路径生效、子树剥离正确", 
       ),
     ),
   );
-  assert.equal(new TextDecoder().decode(tar.get(long)!), "deep", "pax 长路径必须解析出来");
+  assert.equal(
+    new TextDecoder().decode(tar.get(long)!),
+    "deep",
+    "pax 长路径必须解析出来",
+  );
   const picked = pickSkillFiles(tar);
   assert.deepEqual([...picked.keys()].sort(), ["SKILL.md", longRel]);
   assert.match(new TextDecoder().decode(picked.get("SKILL.md")!), /v1/);
@@ -183,7 +187,9 @@ test("首次同步 = installed：文件落盘 + 清单写入 + 版本号来自 a
 test("上游未动 = up-to-date：只发 HEAD，不下载", async (t) => {
   const { statePath, skillDir } = await sandbox(t);
   const f: Fake = {
-    body: archive({ "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v1") }),
+    body: archive({
+      "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v1"),
+    }),
     etag: `"etag-1"`,
     calls: [],
     commit: "b".repeat(40),
@@ -202,7 +208,9 @@ test("上游未动 = up-to-date：只发 HEAD，不下载", async (t) => {
 test("上游内容变 = updated：文件与清单一起更新", async (t) => {
   const { statePath, skillDir } = await sandbox(t);
   const f: Fake = {
-    body: archive({ "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v1") }),
+    body: archive({
+      "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v1"),
+    }),
     etag: `"etag-1"`,
     calls: [],
     commit: "c".repeat(40),
@@ -228,7 +236,9 @@ test("上游内容变 = updated：文件与清单一起更新", async (t) => {
 test("本地改过 = local-edits（不覆盖）；force 才覆盖", async (t) => {
   const { statePath, skillDir } = await sandbox(t);
   const f: Fake = {
-    body: archive({ "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v1") }),
+    body: archive({
+      "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v1"),
+    }),
     etag: `"etag-1"`,
     calls: [],
     commit: "e".repeat(40),
@@ -292,7 +302,9 @@ test("上游删掉的文件会被清掉，用户自己加的文件保留", async
   };
   await syncSkill({ dir: skillDir, statePath, fetchImpl: fakeFetch(f) });
   await writeFile(join(skillDir, "mine.md"), "我加的");
-  f.body = archive({ "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v2") });
+  f.body = archive({
+    "skills-main/skills/typesafe-ai/SKILL.md": skillFile("v2"),
+  });
   f.etag = `"etag-2"`;
   await syncSkill({ dir: skillDir, statePath, fetchImpl: fakeFetch(f) });
   await assert.rejects(() => readFile(join(skillDir, "old.md"), "utf8"));

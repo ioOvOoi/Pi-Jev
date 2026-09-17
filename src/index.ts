@@ -129,8 +129,9 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
 
   // 09 号票：Noul 把关。注册 ≠ 生效——用户还得在权限系统 config.json 里点名链名；
   // 服务端没装或没激活时只提示，不影响插件其余功能
-  let notify: ((text: string, level: "info" | "warning" | "error") => void) | null =
-    null;
+  let notify:
+    | ((text: string, level: "info" | "warning" | "error") => void)
+    | null = null;
   const noul = registerNoulAuthorizer(pi, {
     cfg,
     run,

@@ -149,7 +149,8 @@ export async function makeRunner(
     let client = NO_KEY_CLIENT;
     if (key) {
       const sig = `${key}|${cfg.model}|${cfg.timeoutMs}|${cfg.maxConcurrent}`;
-      if (cache?.sig !== sig) cache = { sig, client: createJevClient(key, cfg) };
+      if (cache?.sig !== sig)
+        cache = { sig, client: createJevClient(key, cfg) };
       client = cache.client;
     }
     return runJev(type, args, { cfg, client, keySource: source });

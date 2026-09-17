@@ -95,7 +95,8 @@ export function verdictFrom(
 ): AuthorizerVerdict {
   if (!out.ok) return { kind: "defer" }; // Jev 不可用：交还人工，不放行
   const { pYes } = out;
-  if (out.lowConfidence || Math.abs(pYes - 0.5) < margin) return { kind: "defer" };
+  if (out.lowConfidence || Math.abs(pYes - 0.5) < margin)
+    return { kind: "defer" };
   if (pYes >= 0.5 + margin) return { kind: "allow" };
   const digest = pickValue(f).slice(0, 200);
   return {
@@ -112,7 +113,8 @@ export function verdictFrom(
 
 /** 从 tool 返回包络里读 noul 概率与低置信标记 */
 export function outcomeOf(r: JevToolResult): NoulOutcome {
-  if ("error" in r) return { ok: false, note: `${r.error.code}: ${r.error.message}` };
+  if ("error" in r)
+    return { ok: false, note: `${r.error.code}: ${r.error.message}` };
   const a = r.answers?.gate;
   if (!isRecord(a) || typeof a.noul !== "number")
     return { ok: false, note: "回答里没有 noul 概率" };
@@ -136,7 +138,9 @@ interface RegisterableService {
 
 /** 权限系统模块的公开面（只用到这一处） */
 interface PermissionModule {
-  getPermissionsService?: (sessionId: string) => RegisterableService | undefined;
+  getPermissionsService?: (
+    sessionId: string,
+  ) => RegisterableService | undefined;
 }
 
 function serviceCandidates(): string[] {
@@ -219,7 +223,8 @@ export function activationHint(): string {
 }
 
 export function renderNoulLine(s: NoulStatus): string {
-  if (!s.enabled) return "关闭（config.permission.enabled=false 或 PI_JEV_PERMISSION=0）";
+  if (!s.enabled)
+    return "关闭（config.permission.enabled=false 或 PI_JEV_PERMISSION=0）";
   const state =
     s.state === "registered"
       ? `已挂链 ${LINK_NAME}（会话 ${s.sessions.length}）`
@@ -278,7 +283,9 @@ export function registerNoulAuthorizer(
     };
     if (deps.debugPath) {
       // 观测文件写失败不该影响权限流程
-      void appendFile(deps.debugPath, JSON.stringify(line) + "\n").catch(() => {});
+      void appendFile(deps.debugPath, JSON.stringify(line) + "\n").catch(
+        () => {},
+      );
     }
   };
 
@@ -313,7 +320,9 @@ export function registerNoulAuthorizer(
     }
     record({ facts, outcome, verdict });
     try {
-      const l = log as { review?: (e: string, d?: Record<string, unknown>) => void };
+      const l = log as {
+        review?: (e: string, d?: Record<string, unknown>) => void;
+      };
       l.review?.("jev_noul", {
         surface: facts.surface ?? null,
         tool: facts.toolName ?? null,
