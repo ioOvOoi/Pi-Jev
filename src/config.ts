@@ -1,5 +1,5 @@
+import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { join } from "node:path";
 
 /** 04 号票 Q4/Q5：独立配置文件，key 不在其中 */
@@ -17,7 +17,8 @@ export const DEFAULTS: JevConfig = {
   lowConfidence: { choice: 0.5, score: 0.5, noulMargin: 0.2 },
 };
 
-export const CONFIG_PATH = join(homedir(), ".pi", "agent", "pi-jev.json");
+/** 走 pi 自己的目录解析（honors PI_CODING_AGENT_DIR），别手搓 ~/.pi/agent */
+export const CONFIG_PATH = join(getAgentDir(), "pi-jev.json");
 
 /** 只认有限数：env 里写了 "abc" 这类脏值不该把 timeout 变成 NaN 交给 SDK */
 const num = (v: unknown): number | undefined =>
