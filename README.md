@@ -64,7 +64,7 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 ```
 
 优先级：**配置文件显式字段 > 环境变量 > 内置默认**（key 不在链上，见「凭证」）。
-env：`PI_JEV_MODEL`、`PI_JEV_TIMEOUT`、`PI_JEV_MAX_CONCURRENT`、`PI_JEV_PERMISSION`（只认明 确的真/假词，脏值当没写）。
+env：`PI_JEV_MODEL`、`PI_JEV_TIMEOUT`、`PI_JEV_MAX_CONCURRENT`、`PI_JEV_PERMISSION`（只认明确的真/假词，脏值当没写）。
 
 ## Noul 把关（权限链）
 
