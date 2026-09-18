@@ -50,11 +50,11 @@ Resolution order: `auth.json` → `TYPESAFE_API_KEY` → missing. `/jev` shows w
 
 ## Tools
 
-A single `jev` tool, **batched and mixed-type**: one `state` plus a map of questions keyed by id, each question carrying its own `type` (noul / choice / score); answers come back under the same ids, spending one request no matter how many questions you ask.
+A single `jev` tool, **batched and mixed-type**: one `state` plus a map of questions keyed by id, each question carrying its own `type` (noul / choice / score); answers come back under the same ids, spending one request no matter how many questions you ask (capped by `maxConcurrent`).
 
 | Tool | Returns |
 |---|---|
-| `jev` | `{ answers: { [id]: noul shape, or choice shape (choice, probabilities, confidence), or score shape (score, legend, probabilities, confidence) — by each question's type, plus _lowConfidence? } }, usage, _keySource } |`
+| `jev` | `{ answers: { [id]: noul shape, or choice shape (choice, probabilities, confidence), or score shape (score, legend, probabilities, confidence) — by each question's type, plus _lowConfidence? } }, usage,_keySource } |`
 
 ```jsonc
 // jev input (a choice question; different ids may carry different types)
@@ -129,6 +129,8 @@ Optional file `~/.pi/agent/pi-jev.json` (missing or malformed = all defaults):
 {
   "model": "jev-latest",
   "timeoutMs": 30000,
+  "maxConcurrent": 4,
+  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 },
   "permission": { "enabled": true }
 }
 ```
@@ -139,6 +141,7 @@ Priority: **explicit config field > environment variable > built-in default** (t
 |---|---|
 | `PI_JEV_MODEL` | Model name |
 | `PI_JEV_TIMEOUT` | Request timeout (ms) |
+| `PI_JEV_MAX_CONCURRENT` | Batch concurrency cap |
 | `PI_JEV_PERMISSION` | `1/true/on/yes` or `0/false/off/no` to enable/disable Noul gating |
 | `TYPESAFE_API_KEY` | Credential fallback |
 

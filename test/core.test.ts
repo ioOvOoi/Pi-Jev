@@ -16,6 +16,7 @@ const ok = (answers: Record<string, unknown>) => ({
   usage: { input_tokens: 1, output_tokens: 2 },
 });
 const deps = (client: any) => ({
+  cfg: DEFAULTS,
   client,
   keySource: "auth.json" as const,
 });
@@ -37,12 +38,13 @@ test("validateArgs：state/questions 必填；每问 type 必填且按型查判�
     "validation",
   );
   assert.equal(
-    validateArgs({ state: "s", questions: { a: { type: "noul" } } })?.error.code,
+    validateArgs({ state: "s", questions: { a: { type: "noul" } } })?.error
+      .code,
     "validation",
   );
   assert.equal(
-    validateArgs({ state: "s", questions: { a: { question: "缺 type" } } })?.error
-      .code,
+    validateArgs({ state: "s", questions: { a: { question: "缺 type" } } })
+      ?.error.code,
     "validation",
   );
   assert.equal(
@@ -52,8 +54,14 @@ test("validateArgs：state/questions 必填；每问 type 必填且按型查判�
     })?.error.code,
     "validation",
   );
-  assert.equal(validateArgs(q("choice", { options: { x: "1" } }))?.error.code, "validation");
-  assert.equal(validateArgs(q("score", { levels: ["一档"] }))?.error.code, "validation");
+  assert.equal(
+    validateArgs(q("choice", { options: { x: "1" } }))?.error.code,
+    "validation",
+  );
+  assert.equal(
+    validateArgs(q("score", { levels: ["一档"] }))?.error.code,
+    "validation",
+  );
   assert.equal(validateArgs(q("noul", {})), null);
   assert.equal(
     validateArgs(q("choice", { options: { x: "1", y: null } })),
@@ -75,7 +83,12 @@ test("validateArgs：state/questions 必填；每问 type 必填且按型查判�
 
 test("toSdkQuestion：按问题的 type 字段映射成 SDK 问题形状", () => {
   assert.deepEqual(
-    toSdkQuestion({ type: "noul", question: "是吗", trueMeans: "是", falseMeans: "否" }),
+    toSdkQuestion({
+      type: "noul",
+      question: "是吗",
+      trueMeans: "是",
+      falseMeans: "否",
+    }),
     {
       type: "noul",
       instructions: "是吗",
@@ -83,7 +96,11 @@ test("toSdkQuestion：按问题的 type 字段映射成 SDK 问题形状", () =>
     },
   );
   assert.deepEqual(
-    toSdkQuestion({ type: "choice", question: "哪个", options: { a: "甲", b: null } }),
+    toSdkQuestion({
+      type: "choice",
+      question: "哪个",
+      options: { a: "甲", b: null },
+    }),
     {
       type: "choice",
       instructions: "哪个",
@@ -103,15 +120,24 @@ test("toSdkQuestion：按问题的 type 字段映射成 SDK 问题形状", () =>
 test("markLow：choice/score 看 confidence（严格小于），noul 看离 0.5 的距离", () => {
   const low = (a: unknown) =>
     (a as { _lowConfidence?: boolean })._lowConfidence === true;
-  assert.equal(low(markLow({ type: "choice", confidence: 0.49 })), true);
-  assert.equal(low(markLow({ type: "choice", confidence: 0.5 })), false);
-  assert.equal(low(markLow({ type: "score", confidence: 0.49 })), true);
-  assert.equal(low(markLow({ type: "noul", noul: 0.31 })), true);
-  // 注意：0.7-0.5 在浮点下是 0.19999…，仍 < 0.2，故用 0.75 代表「清楚不低置信」
-  assert.equal(low(markLow({ type: "noul", noul: 0.75 })), false);
-  assert.equal(low(markLow({ type: "noul", noul: 0.9 })), false);
   assert.equal(
-    JSON.stringify(markLow({ type: "noul", noul: 0.9 })),
+    low(markLow({ type: "choice", confidence: 0.49 }, DEFAULTS)),
+    true,
+  );
+  assert.equal(
+    low(markLow({ type: "choice", confidence: 0.5 }, DEFAULTS)),
+    false,
+  );
+  assert.equal(
+    low(markLow({ type: "score", confidence: 0.49 }, DEFAULTS)),
+    true,
+  );
+  assert.equal(low(markLow({ type: "noul", noul: 0.31 }, DEFAULTS)), true);
+  // 注意：0.7-0.5 在浮点下是 0.19999…，仍 < 0.2，故用 0.75 代表「清楚不低置信」
+  assert.equal(low(markLow({ type: "noul", noul: 0.75 }, DEFAULTS)), false);
+  assert.equal(low(markLow({ type: "noul", noul: 0.9 }, DEFAULTS)), false);
+  assert.equal(
+    JSON.stringify(markLow({ type: "noul", noul: 0.9 }, DEFAULTS)),
     JSON.stringify({ type: "noul", noul: 0.9 }),
   );
 });

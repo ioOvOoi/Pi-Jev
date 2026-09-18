@@ -2,6 +2,12 @@
 
 All notable changes to Pi-Jev. Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.1.3] — 2026-09-17
+
+### Changed
+
+- **Restored config keys**: `maxConcurrent` and `lowConfidence` (file + `PI_JEV_*` env) are configurable again with the same defaults — 0.1.2's slimming cut too deep. The single-tool and panel-only changes stand.
+
 ## [0.1.2] — 2026-09-17
 
 ### Changed

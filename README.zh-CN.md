@@ -50,11 +50,11 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 
 ## jev 工具
 
-单个 `jev` 工具，**批量且可混型**：一个 `state` + 一张按 id 索引的问题表，每问自带 `type`（noul / choice / score）；答案按同一 id 返回，一次请求并行答完全部问题。
+单个 `jev` 工具，**批量且可混型**：一个 `state` + 一张按 id 索引的问题表，每问自带 `type`（noul / choice / score）；答案按同一 id 返回，一次请求并行答完全部问题（并发受 `maxConcurrent` 限制）。
 
 | 工具 | 返回 |
 |---|---|
-| `jev` | `{ answers: { [id]: 按 type 给 noul 形状，或 choice 形状（choice, probabilities, confidence），或 score 形状（score, legend, probabilities, confidence），附 _lowConfidence? } }, usage, _keySource } |`
+| `jev` | `{ answers: { [id]: 按 type 给 noul 形状，或 choice 形状（choice, probabilities, confidence），或 score 形状（score, legend, probabilities, confidence），附 _lowConfidence? } }, usage,_keySource } |`
 
 ```jsonc
 // jev 入参（choice 问题；混型时不同 id 可带不同 type）
@@ -129,6 +129,8 @@ Jev (TypeSafe System One) 状态
 {
   "model": "jev-latest",
   "timeoutMs": 30000,
+  "maxConcurrent": 4,
+  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 },
   "permission": { "enabled": true }
 }
 ```
@@ -139,6 +141,7 @@ Jev (TypeSafe System One) 状态
 |---|---|
 | `PI_JEV_MODEL` | 模型名 |
 | `PI_JEV_TIMEOUT` | 请求超时（ms） |
+| `PI_JEV_MAX_CONCURRENT` | 批量并发上限 |
 | `PI_JEV_PERMISSION` | `1/true/on/yes` 或 `0/false/off/no` 开关 Noul 把关 |
 | `TYPESAFE_API_KEY` | key 兜底 |
 

@@ -12,7 +12,10 @@ const STATE = Type.Unknown({
 const QUESTION = Type.Object({
   type: Type.Union(
     [Type.Literal("noul"), Type.Literal("choice"), Type.Literal("score")],
-    { description: "问题类型：noul=是否判断 / choice=选项选一 / score=有序档位打分" },
+    {
+      description:
+        "问题类型：noul=是否判断 / choice=选项选一 / score=有序档位打分",
+    },
   ),
   question: Type.String({
     description: "问题文本：把判断含义写完整（判据、对比、排除），一问一判断",

@@ -80,9 +80,7 @@ export function mapSdkError(e: unknown): JevError {
   return err("network", String((e as { message?: unknown })?.message ?? e));
 }
 
-/** 并发闸上限：公开端点约 8 并发，0.1.2 起固定 4（给 permission 链留余量），不再可配 */
-export const MAX_CONCURRENT = 4;
-
+/** 并发闸：公开端点约 8 并发上限，04 号票 Q5 默认 4，给 permission 链留余量 */
 export class Semaphore {
   private running = 0;
   private readonly waiters: (() => void)[] = [];
@@ -126,7 +124,7 @@ export function createJevClient(key: string, cfg: JevConfig): JevClientHandle {
     const mapped = mapSdkError(e);
     return { systemOne: async () => mapped };
   }
-  const sem = new Semaphore(MAX_CONCURRENT);
+  const sem = new Semaphore(cfg.maxConcurrent);
   return {
     async systemOne(state, questions) {
       try {

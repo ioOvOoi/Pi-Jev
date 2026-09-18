@@ -18,9 +18,6 @@ import type { KeySource } from "./auth.js";
 
 export type JevType = "noul" | "choice" | "score";
 
-/** 04 号票 Q7 的默认低置信阈值（0.1.2 固定值）：choice/score 看 confidence，noul 看离 0.5 的距离 */
-export const LOW = { choice: 0.5, score: 0.5, noulMargin: 0.2 };
-
 /** tool 面参数（04 号票 Q2/Q8：state 显式传入、questions 批量；0.1.2 起每问自带 type，可混型） */
 export interface JevToolArgs {
   state: unknown;
@@ -46,11 +43,17 @@ export function validateArgs(args: JevToolArgs): JevError | null {
   if (args?.state == null || args.state === "")
     return err("validation", "state 为必填（文本 / JSON 对象 / 数组）");
   if (!isRecord(args?.questions) || Object.keys(args.questions).length === 0)
-    return err("validation", "questions 至少一问：{ [id]: { type, question, … } }");
+    return err(
+      "validation",
+      "questions 至少一问：{ [id]: { type, question, … } }",
+    );
   for (const [id, q] of Object.entries(args.questions)) {
     if (!isRecord(q)) return err("validation", `questions.${id}: 必须是对象`);
     if (typeof q.type !== "string" || !TYPES.includes(q.type))
-      return err("validation", `questions.${id}: type 必填，取 noul | choice | score`);
+      return err(
+        "validation",
+        `questions.${id}: type 必填，取 noul | choice | score`,
+      );
     if (typeof q.question !== "string" || !q.question.trim())
       return err("validation", `questions.${id}: question 文本为必填`);
     if (q.type === "choice") {
@@ -87,19 +90,21 @@ export function toSdkQuestion(q: Record<string, unknown>): Question {
 }
 
 /** 04 号票 Q1/Q7：choice/score 看自带 confidence，noul 看离 0.5 的距离 */
-export function markLow(answer: unknown): unknown {
+export function markLow(answer: unknown, cfg: JevConfig): unknown {
   if (!isRecord(answer)) return answer;
   const a = answer as { type?: string; confidence?: number; noul?: number };
   const low =
     a.type === "noul"
-      ? typeof a.noul === "number" && Math.abs(a.noul - 0.5) < LOW.noulMargin
+      ? typeof a.noul === "number" &&
+        Math.abs(a.noul - 0.5) < cfg.lowConfidence.noulMargin
       : (a.type === "choice" || a.type === "score") &&
         typeof a.confidence === "number" &&
-        a.confidence < LOW[a.type];
+        a.confidence < cfg.lowConfidence[a.type];
   return low ? { ...a, _lowConfidence: true } : a;
 }
 
 export interface JevDeps {
+  cfg: JevConfig;
   client: JevClientHandle;
   keySource: KeySource;
 }
@@ -118,7 +123,7 @@ export async function runJev(
   if ("error" in r) return r;
   return {
     answers: Object.fromEntries(
-      Object.entries(r.answers).map(([id, a]) => [id, markLow(a)]),
+      Object.entries(r.answers).map(([id, a]) => [id, markLow(a, deps.cfg)]),
     ),
     usage: r.usage,
     _keySource: deps.keySource,
@@ -144,11 +149,11 @@ export async function makeRunner(
     const { key, source } = await resolveKey();
     let client = NO_KEY_CLIENT;
     if (key) {
-      const sig = `${key}|${cfg.model}|${cfg.timeoutMs}`;
+      const sig = `${key}|${cfg.model}|${cfg.timeoutMs}|${cfg.maxConcurrent}`;
       if (cache?.sig !== sig)
         cache = { sig, client: createJevClient(key, cfg) };
       client = cache.client;
     }
-    return runJev(args, { client, keySource: source });
+    return runJev(args, { cfg, client, keySource: source });
   };
 }

@@ -49,7 +49,8 @@ function renderPanel(
   return [
     "Jev (TypeSafe System One) 状态",
     `  key:    ${keyLine}`,
-    `  model:  ${cfg.model}   timeout: ${cfg.timeoutMs}ms`,
+    `  model:  ${cfg.model}   timeout: ${cfg.timeoutMs}ms   并发: ${cfg.maxConcurrent}`,
+    `  低置信: choice<${cfg.lowConfidence.choice}  score<${cfg.lowConfidence.score}  noul±${cfg.lowConfidence.noulMargin}`,
     `  skill:  ${skillLine()}`,
     `  把关:   ${noulLine}`,
     `  配置文件: ${CONFIG_PATH}（缺失=全默认；改后重启会话生效）`,

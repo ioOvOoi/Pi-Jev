@@ -16,7 +16,6 @@ import {
   type AuthorizerVerdict,
 } from "../src/permission.js";
 import { DEFAULTS } from "../src/config.js";
-import { LOW } from "../src/core.js";
 import type { JevRunner } from "../src/tools.js";
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -89,7 +88,7 @@ test("buildQuestion：带上工具名与具体内容，不留猜的空间", () =
 });
 
 test("verdictFrom：概率映射 + 低置信/失败一律 defer", () => {
-  const m = LOW.noulMargin; // 0.2
+  const m = DEFAULTS.lowConfidence.noulMargin; // 0.2
   assert.deepEqual(
     verdictFrom({ ok: true, pYes: 0.9, lowConfidence: false }, m),
     {
