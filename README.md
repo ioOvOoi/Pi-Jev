@@ -50,20 +50,19 @@ Resolution order: `auth.json` → `TYPESAFE_API_KEY` → missing. `/jev` shows w
 
 ## Tools
 
-All three tools are **batched**: one `state` plus a map of questions keyed by id; answers come back under the same ids, spending one request no matter how many questions you ask (capped by `maxConcurrent`).
+A single `jev` tool, **batched and mixed-type**: one `state` plus a map of questions keyed by id, each question carrying its own `type` (noul / choice / score); answers come back under the same ids, spending one request no matter how many questions you ask.
 
 | Tool | Returns |
 |---|---|
-| `jev_noul` | `{ answers: { [id]: { type, noul, _lowConfidence? } }, usage }` |
-| `jev_choice` | `{ answers: { [id]: { type, choice, probabilities, confidence, _lowConfidence? } }, usage }` |
-| `jev_score` | `{ answers: { [id]: { type, score, probabilities, confidence, legend, _lowConfidence? } }, usage }` |
+| `jev` | `{ answers: { [id]: noul shape, or choice shape (choice, probabilities, confidence), or score shape (score, legend, probabilities, confidence) — by each question's type, plus _lowConfidence? } }, usage, _keySource } |`
 
 ```jsonc
-// jev_choice input
+// jev input (a choice question; different ids may carry different types)
 {
   "state": "用户要求把旧产物全删掉，仓库里还有未提交的改动",
   "questions": {
     "next": {
+      "type": "choice",
       "question": "下一步最该做什么？",
       "options": { "list": "先列目录看清现状", "del": "直接删掉旧产物", "ask": "先问用户" }
     }
@@ -94,8 +93,7 @@ All three tools are **batched**: one `state` plus a map of questions keyed by id
 
 | Command | What it does |
 |---|---|
-| `/jev` | Status panel: key source, model, endpoint, thresholds, concurrency, permission-chain state, skill state, config path |
-| `/jev <text>` | One shot: runs the canned Noul question against that text (smoke test for key + chain) |
+| `/jev` | Status panel: key source, model, permission-chain state, skill state, config path |
 | `/jev-skill` | Official skill status |
 | `/jev-skill check` | Compare local skill against upstream (`up-to-date` / `update-available`) |
 | `/jev-skill update` | Force sync from upstream |
@@ -105,12 +103,10 @@ Sample panel:
 ```
 Jev (TypeSafe System One) 状态
    key:    ✓ auth.json（apikey…3ba9）
-   model:  jev-latest   timeout: 30000ms   并发: 4
-   低置信: choice<0.5  score<0.5  noul±0.2
+   model:  jev-latest   timeout: 30000ms
    skill:  ✓ 已是最新 65a39f3
    把关:   已挂链 jev-noul（会话 1） · 激活状态未知 · 最近：无
    配置文件: ~/.pi/agent/pi-jev.json（缺失=全默认；改后重启会话生效）
-   试一枪: /jev <命题>（返回该命题为真的校准概率）
 ```
 
 ## Official skill, auto-installed
@@ -133,8 +129,6 @@ Optional file `~/.pi/agent/pi-jev.json` (missing or malformed = all defaults):
 {
   "model": "jev-latest",
   "timeoutMs": 30000,
-  "maxConcurrent": 4,
-  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 },
   "permission": { "enabled": true }
 }
 ```
@@ -145,7 +139,6 @@ Priority: **explicit config field > environment variable > built-in default** (t
 |---|---|
 | `PI_JEV_MODEL` | Model name |
 | `PI_JEV_TIMEOUT` | Request timeout (ms) |
-| `PI_JEV_MAX_CONCURRENT` | Batch concurrency cap |
 | `PI_JEV_PERMISSION` | `1/true/on/yes` or `0/false/off/no` to enable/disable Noul gating |
 | `TYPESAFE_API_KEY` | Credential fallback |
 

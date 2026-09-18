@@ -26,3 +26,5 @@
 工具签名与错误码枚举（auth/validation/rate_limited/overloaded/network/timeout）见 `prototype/README.md`；实现以 `prototype/core.ts` 为基准，08-core-impl 换真 client。
 
 —— 结题。资产：`prototype/core.ts`、`prototype/README.md`、`CONTEXT.md`（词汇表）。
+
+> 更新（0.1.2，用户拍板瘦身）：三 tool 合一为单个 jev（每问自带 type，混型一次请求）；/jev 只留面板（删试一枪与启动提示）；配置只留 model/timeoutMs/permission.enabled，低置信阈值与并发改为固定默认。

@@ -14,7 +14,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { JevConfig } from "./config.js";
-import type { JevToolResult } from "./core.js";
+import { LOW, type JevToolResult } from "./core.js";
 import type { JevRunner } from "./tools.js";
 
 /** 链上链名：权限系统 config.json 的 authorizerChain 要写这个名字 */
@@ -308,12 +308,12 @@ export function registerNoulAuthorizer(
     let outcome: NoulOutcome | null = null;
     let verdict: AuthorizerVerdict = { kind: "defer" };
     try {
-      const r: JevToolResult = await deps.run("noul", {
+      const r: JevToolResult = await deps.run({
         state: pickValue(facts) || `${facts.toolName ?? "tool"}`,
         questions: { gate: buildQuestion(facts) },
       });
       outcome = outcomeOf(r);
-      verdict = verdictFrom(outcome, deps.cfg.lowConfidence.noulMargin, facts);
+      verdict = verdictFrom(outcome, LOW.noulMargin, facts);
     } catch (e) {
       // 任何意外都按「不放行」处理：把决定交还人工
       outcome = { ok: false, note: e instanceof Error ? e.message : String(e) };

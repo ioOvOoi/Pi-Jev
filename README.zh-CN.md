@@ -48,22 +48,21 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 
 解析顺序：`auth.json` → `TYPESAFE_API_KEY` → missing。`/jev` 面板显示当前用的是哪一源。缺 key 不抛异常：工具返回 `{ error: { code: "auth", ... } }`。
 
-## 三个工具
+## jev 工具
 
-三者都是**批量**：一个 `state` + 一张按 id 索引的问题表；答案按同一 id 返回；问几个问题都只花一次请求（并发受 `maxConcurrent` 限制）。
+单个 `jev` 工具，**批量且可混型**：一个 `state` + 一张按 id 索引的问题表，每问自带 `type`（noul / choice / score）；答案按同一 id 返回，一次请求并行答完全部问题。
 
 | 工具 | 返回 |
 |---|---|
-| `jev_noul` | `{ answers: { [id]: { type, noul, _lowConfidence? } }, usage }` |
-| `jev_choice` | `{ answers: { [id]: { type, choice, probabilities, confidence, _lowConfidence? } }, usage }` |
-| `jev_score` | `{ answers: { [id]: { type, score, probabilities, confidence, legend, _lowConfidence? } }, usage }` |
+| `jev` | `{ answers: { [id]: 按 type 给 noul 形状，或 choice 形状（choice, probabilities, confidence），或 score 形状（score, legend, probabilities, confidence），附 _lowConfidence? } }, usage, _keySource } |`
 
 ```jsonc
-// jev_choice 入参
+// jev 入参（choice 问题；混型时不同 id 可带不同 type）
 {
   "state": "用户要求把旧产物全删掉，仓库里还有未提交的改动",
   "questions": {
     "next": {
+      "type": "choice",
       "question": "下一步最该做什么？",
       "options": { "list": "先列目录看清现状", "del": "直接删掉旧产物", "ask": "先问用户" }
     }
@@ -94,8 +93,7 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 
 | 命令 | 作用 |
 |---|---|
-| `/jev` | 状态面板：key 来源、模型、端点、阈值、并发、权限链、skill 状态、配置路径 |
-| `/jev <命题>` | 试一枪：把输入本身当作 Noul 命题，返回其为真的校准概率 |
+| `/jev` | 状态面板：key 来源、模型、权限链、skill 状态、配置路径 |
 | `/jev-skill` | 官方 skill 状态 |
 | `/jev-skill check` | 与上游比对（`up-to-date` / `update-available`） |
 | `/jev-skill update` | 强制与上游同步 |
@@ -105,12 +103,10 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 ```
 Jev (TypeSafe System One) 状态
    key:    ✓ auth.json（apikey…3ba9）
-   model:  jev-latest   timeout: 30000ms   并发: 4
-   低置信: choice<0.5  score<0.5  noul±0.2
+   model:  jev-latest   timeout: 30000ms
    skill:  ✓ 已是最新 65a39f3
    把关:   已挂链 jev-noul（会话 1） · 激活状态未知 · 最近：无
    配置文件: ~/.pi/agent/pi-jev.json（缺失=全默认；改后重启会话生效）
-   试一枪: /jev <命题>（返回该命题为真的校准概率）
 ```
 
 ## 官方 skill 自动装、自动更
@@ -133,8 +129,6 @@ Jev (TypeSafe System One) 状态
 {
   "model": "jev-latest",
   "timeoutMs": 30000,
-  "maxConcurrent": 4,
-  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 },
   "permission": { "enabled": true }
 }
 ```
@@ -145,7 +139,6 @@ Jev (TypeSafe System One) 状态
 |---|---|
 | `PI_JEV_MODEL` | 模型名 |
 | `PI_JEV_TIMEOUT` | 请求超时（ms） |
-| `PI_JEV_MAX_CONCURRENT` | 批量并发上限 |
 | `PI_JEV_PERMISSION` | `1/true/on/yes` 或 `0/false/off/no` 开关 Noul 把关 |
 | `TYPESAFE_API_KEY` | key 兜底 |
 
@@ -172,7 +165,7 @@ Jev (TypeSafe System One) 状态
 npm install
 npm run typecheck   # tsc，期望 0 错
 npm test            # tsx --test 跑 30 项，不走网络、不需要 key
-npm run smoke:live  # 真端点：三 tool 各批量一发（需要 key）
+npm run smoke:live  # 真端点：三种形态各一发（需要 key）
 npm run smoke:skill # 真网络：上游 skill check/sync
 ```
 

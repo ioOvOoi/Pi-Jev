@@ -2,12 +2,10 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-/** 04 号票 Q4/Q5：独立配置文件，key 不在其中 */
+/** 04 号票 Q4/Q5；0.1.2 瘦身：只留真正被调的项，低置信阈值与并发在 core/client 里固定 */
 export interface JevConfig {
   model: string;
   timeoutMs: number;
-  maxConcurrent: number;
-  lowConfidence: { choice: number; score: number; noulMargin: number };
   /** 09 号票：Noul 把关总开关（链名是否被权限系统点名仍由用户配置决定） */
   permission: { enabled: boolean };
 }
@@ -15,8 +13,6 @@ export interface JevConfig {
 export const DEFAULTS: JevConfig = {
   model: "jev-latest",
   timeoutMs: 30_000,
-  maxConcurrent: 4,
-  lowConfidence: { choice: 0.5, score: 0.5, noulMargin: 0.2 },
   permission: { enabled: true },
 };
 
@@ -39,8 +35,7 @@ const bool = (v: string | undefined): boolean | undefined =>
 
 /**
  * 04 号票 Q6：配置文件显式字段 > env(PI_JEV_*) > 内置默认；文件缺失=全默认。
- * key 不在此链（见 auth.ts）。
- * opts.path 仅为测试注入，生产走 CONFIG_PATH。
+ * key 不在此链（见 auth.ts）。opts.path 仅为测试注入，生产走 CONFIG_PATH。
  */
 export async function loadConfig(
   opts: { path?: string } = {},
@@ -49,7 +44,6 @@ export async function loadConfig(
   const env = (k: string) => num(Number(process.env[k]));
   cfg.model = process.env.PI_JEV_MODEL || cfg.model;
   cfg.timeoutMs = env("PI_JEV_TIMEOUT") ?? cfg.timeoutMs;
-  cfg.maxConcurrent = env("PI_JEV_MAX_CONCURRENT") ?? cfg.maxConcurrent;
   cfg.permission.enabled =
     bool(process.env.PI_JEV_PERMISSION) ?? cfg.permission.enabled;
   try {
@@ -58,16 +52,8 @@ export async function loadConfig(
     ) as Partial<JevConfig>;
     if (typeof file.model === "string" && file.model) cfg.model = file.model;
     cfg.timeoutMs = num(file.timeoutMs) ?? cfg.timeoutMs;
-    cfg.maxConcurrent = num(file.maxConcurrent) ?? cfg.maxConcurrent;
     if (typeof file.permission?.enabled === "boolean")
       cfg.permission.enabled = file.permission.enabled;
-    const lc = file.lowConfidence;
-    if (lc) {
-      cfg.lowConfidence.choice = num(lc.choice) ?? cfg.lowConfidence.choice;
-      cfg.lowConfidence.score = num(lc.score) ?? cfg.lowConfidence.score;
-      cfg.lowConfidence.noulMargin =
-        num(lc.noulMargin) ?? cfg.lowConfidence.noulMargin;
-    }
   } catch {
     // 文件缺失或坏 JSON = 全默认，正常路径
   }

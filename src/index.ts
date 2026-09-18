@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { loadConfig, CONFIG_PATH, type JevConfig } from "./config.js";
 import { resolveKey } from "./auth.js";
-import { makeRunner, type JevToolResult } from "./core.js";
+import { makeRunner } from "./core.js";
 import { registerJevTools } from "./tools.js";
 import { registerTypeSafeProvider } from "./provider.js";
 import { registerNoulAuthorizer, renderNoulLine } from "./permission.js";
@@ -13,12 +13,6 @@ import {
   type SkillState,
   type SkillSyncResult,
 } from "./skill.js";
-
-/** /jev <命题>：用户输入本身即待判命题；state 用固定占位（validateArgs 要求非空） */
-const PROBE_STATE = "（pi 会话直接输入，无额外上下文）";
-const buildProbeQuestions = (text: string) => ({
-  probe: { question: text },
-});
 
 /** 后台 skill 同步的最近结果：面板与 /jev-skill 都读它，别每次重跑网络 */
 let skillSnapshot: SkillSyncResult | null = null;
@@ -55,12 +49,10 @@ function renderPanel(
   return [
     "Jev (TypeSafe System One) 状态",
     `  key:    ${keyLine}`,
-    `  model:  ${cfg.model}   timeout: ${cfg.timeoutMs}ms   并发: ${cfg.maxConcurrent}`,
-    `  低置信: choice<${cfg.lowConfidence.choice}  score<${cfg.lowConfidence.score}  noul±${cfg.lowConfidence.noulMargin}`,
+    `  model:  ${cfg.model}   timeout: ${cfg.timeoutMs}ms`,
     `  skill:  ${skillLine()}`,
     `  把关:   ${noulLine}`,
     `  配置文件: ${CONFIG_PATH}（缺失=全默认；改后重启会话生效）`,
-    "  试一枪: /jev <命题>（返回该命题为真的校准概率）",
   ].join("\n");
 }
 
@@ -116,7 +108,7 @@ function skillNotice(
 
 /**
  * Pi-Jev 扩展入口。
- * 已挂：/login Typesafe provider · 三 tool（jev_noul/choice/score）· /jev 面板 + 试一枪
+ * 已挂：/login Typesafe provider · jev tool（混型批量判断）· /jev 面板
  *      · 官方 skill 自动安装/更新 + /jev-skill · Noul 把关（Authorizer Chain，09 号票）。
  */
 export default async function jev(pi: ExtensionAPI): Promise<void> {
@@ -150,10 +142,6 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
 
   pi.on("session_start", (_event, ctx) => {
     notify = (text, level) => ctx.ui.notify(text, level);
-    ctx.ui.notify(
-      "Jev 已挂载 —— /jev 状态面板 · /jev <命题> 试一枪 · /jev-skill 管理官方 skill",
-      "info",
-    );
     void skillSync.then((r) => {
       skillSnapshot = r;
       const notice = skillNotice(r);
@@ -198,42 +186,17 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
   });
 
   pi.registerCommand("jev", {
-    description: "Jev (TypeSafe System One) 状态面板；/jev <命题> 判真假",
+    description: "Jev (TypeSafe System One) 状态面板",
     handler: async (args, ctx) => {
+      if (args.trim())
+        ctx.ui.notify(
+          "/jev 只看状态。要让 Jev 判断，直接让 agent 调 jev 工具（问题自带 type）。",
+          "info",
+        );
       const { key, source } = await resolveKey();
-      if (!args.trim()) {
-        ctx.ui.notify(
-          renderPanel(cfg, key, source, renderNoulLine(noul.status())),
-          source === "missing" ? "warning" : "info",
-        );
-        return;
-      }
-      const t0 = Date.now();
-      const result: JevToolResult = await run("noul", {
-        state: PROBE_STATE,
-        questions: buildProbeQuestions(args),
-      });
-      const ms = Date.now() - t0;
-      if ("error" in result) {
-        const hint = result.error.hint ? `（${result.error.hint}）` : "";
-        ctx.ui.notify(
-          `Jev 试一枪失败 —— ${result.error.code}: ${result.error.message}${hint}`,
-          "error",
-        );
-        return;
-      }
-      const a = Object.values(result.answers)[0] as
-        | { noul?: number; _lowConfidence?: boolean }
-        | undefined;
-      const pct =
-        a && typeof a.noul === "number"
-          ? `${Math.round(a.noul * 100)}%`
-          : "未知";
-      const low = a?._lowConfidence ? " · 低置信" : "";
-      const quote = args.length > 20 ? `${args.slice(0, 20)}…` : args;
       ctx.ui.notify(
-        `Jev 试一枪：${pct} —— 「${quote}」为真的概率${low}\nkey：${source} · 输入 ${result.usage.input_tokens} / 输出 ${result.usage.output_tokens} token · ${ms}ms`,
-        "info",
+        renderPanel(cfg, key, source, renderNoulLine(noul.status())),
+        source === "missing" ? "warning" : "info",
       );
     },
   });

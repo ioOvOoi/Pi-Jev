@@ -2,6 +2,14 @@
 
 All notable changes to Pi-Jev. Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.1.2] — 2026-09-17
+
+### Changed
+
+- **Single `jev` tool**: `jev_noul` / `jev_choice` / `jev_score` merged into one `jev` tool whose questions carry a `type` field — mixed-type batches now fit in a single request, and agents see one tool schema instead of three.
+- **`/jev` is panel-only**: the one-shot probe and the "Jev 已挂载" startup toast are gone (ask the agent to call `jev` directly; the panel + `npm run smoke:live` cover key/link checks).
+- **Config slimmed** to `model`, `timeoutMs`, `permission.enabled` (file/env resolution unchanged). Low-confidence thresholds and the concurrency cap are fixed defaults now; `maxConcurrent` / `lowConfidence` keys are no longer read.
+
 ## [0.1.1] — 2026-09-17
 
 ### Changed

@@ -17,7 +17,18 @@ console.log(
   `TypeSmoke · 实调 choice / score / noul · key 来源 ${source}（${key.slice(0, 4)}…${key.slice(-4)}）`,
 );
 
-const run = await makeRunner(cfg, resolveKey);
+const _run = await makeRunner(cfg, resolveKey);
+/** 0.1.2 单 tool 化：runner 收单参；按三形态调用习惯包一层，每问注入 type */
+const run = async (
+  type: JevType,
+  args: { state: unknown; questions: Record<string, Record<string, unknown>> },
+) =>
+  _run({
+    ...args,
+    questions: Object.fromEntries(
+      Object.entries(args.questions).map(([id, q]) => [id, { type, ...q }]),
+    ),
+  });
 
 const state = "用户让 agent 整理本地缓存目录，并清掉过期的构建产物";
 const CASES: Record<

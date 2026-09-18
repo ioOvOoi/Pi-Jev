@@ -13,7 +13,7 @@ import {
   TypeSafeError,
   UnprocessableEntityError,
 } from "@typesafe-ai/sdk";
-import { createJevClient, mapSdkError } from "../src/client.js";
+import { createJevClient, mapSdkError, Semaphore } from "../src/client.js";
 import { DEFAULTS } from "../src/config.js";
 import { startFakeTypeSafe } from "./fake-endpoint.js";
 
@@ -100,21 +100,19 @@ test("真 SDK 路径（假端点）：请求体/鉴权头正确，答案带 _low
   assert.equal(fake.bodies[0].body.model, DEFAULTS.model);
 });
 
-test("并发闸：maxConcurrent=1 时三个并发调用实测并发为 1", async (t) => {
-  const fake = await startFakeTypeSafe({ delayMs: 60 });
-  t.after(() => {
-    delete process.env.TYPESAFE_BASE_URL;
-    return fake.close();
-  });
-  process.env.TYPESAFE_BASE_URL = fake.url;
-  const client = createJevClient("sk-fake", { ...DEFAULTS, maxConcurrent: 1 });
-  const call = () =>
-    client.systemOne("s", {
-      a: { type: "noul", instructions: "q", criteria: null },
+test("并发闸：Semaphore 限 1 时三个并发任务实测峰值并发为 1", async () => {
+  const sem = new Semaphore(1);
+  let inflight = 0;
+  let peak = 0;
+  const task = () =>
+    sem.withLock(async () => {
+      inflight++;
+      peak = Math.max(peak, inflight);
+      await new Promise((r) => setTimeout(r, 20));
+      inflight--;
     });
-  await Promise.all([call(), call(), call()]);
-  assert.equal(fake.maxConcurrent, 1);
-  assert.equal(fake.bodies.length, 3);
+  await Promise.all([task(), task(), task()]);
+  assert.equal(peak, 1);
 });
 
 test("HTTP 错误进包络：401/429（SDK 自带重试后仍失败）", async (t) => {
