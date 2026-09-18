@@ -2,6 +2,12 @@
 
 All notable changes to Pi-Jev. Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.1.1] — 2026-09-17
+
+### Changed
+
+- **/jev <text>**: the text you type is now the proposition itself — sent to Jev as a Noul question, answering "how likely is this true". Previously it ran a canned "is this urgent?" question, which made outputs like `1+1=2 → 3%` confusing.
+
 ## [0.1.0] — 2026-09-17
 
 First release: TypeSafe Jev (System One) inside pi.

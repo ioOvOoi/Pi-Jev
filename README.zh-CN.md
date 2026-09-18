@@ -95,7 +95,7 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 | 命令 | 作用 |
 |---|---|
 | `/jev` | 状态面板：key 来源、模型、端点、阈值、并发、权限链、skill 状态、配置路径 |
-| `/jev <文本>` | 试一枪：对这段文本跑罐头 Noul 问题（验证 key 与链路） |
+| `/jev <命题>` | 试一枪：把输入本身当作 Noul 命题，返回其为真的校准概率 |
 | `/jev-skill` | 官方 skill 状态 |
 | `/jev-skill check` | 与上游比对（`up-to-date` / `update-available`） |
 | `/jev-skill update` | 强制与上游同步 |
@@ -110,7 +110,7 @@ Jev (TypeSafe System One) 状态
    skill:  ✓ 已是最新 65a39f3
    把关:   已挂链 jev-noul（会话 1） · 激活状态未知 · 最近：无
    配置文件: ~/.pi/agent/pi-jev.json（缺失=全默认；改后重启会话生效）
-   试一枪: /jev <任意文本>（罐头 Noul 问题，只验证 key 与链路）
+   试一枪: /jev <命题>（返回该命题为真的校准概率）
 ```
 
 ## 官方 skill 自动装、自动更

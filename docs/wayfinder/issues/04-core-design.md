@@ -15,6 +15,8 @@
 | Q1 | 工具返回 | 结构化 JSON（SDK answer 原样）+ 低于阈值附 `_lowConfidence: true` |
 | Q2 | state 来源 | 显式参数，不自动采集会话 |
 | Q3 | /jev v0.1 | 无参=状态面板；`/jev <文本>`=罐头 Noul 试一枪 |
+
+> 更新（0.1.1，用户反馈）：Q3 罐头问题语义反直觉——输入被当 state 套固定问题。`/jev <文本>` 已改为把输入本身作为 Noul 命题（state 固定占位）；主 agent 的自由精细化走 jev_*三 tool。
 | Q4 | 配置 | 独立配置文件 `~/.pi/agent/pi-jev.json`，缺失回退内置默认 |
 | Q5 | 配置范围 | `{model, timeoutMs, maxConcurrent, lowConfidence:{choice, score, noulMargin}}` |
 | Q6 | 优先级 | 配置文件显式字段 > env(PI_JEV_*) > 内置默认；**key 除外**（TYPESAFE_API_KEY / auth.json） |

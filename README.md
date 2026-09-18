@@ -110,7 +110,7 @@ Jev (TypeSafe System One) 状态
    skill:  ✓ 已是最新 65a39f3
    把关:   已挂链 jev-noul（会话 1） · 激活状态未知 · 最近：无
    配置文件: ~/.pi/agent/pi-jev.json（缺失=全默认；改后重启会话生效）
-   试一枪: /jev <任意文本>（罐头 Noul 问题，只验证 key 与链路）
+   试一枪: /jev <命题>（返回该命题为真的校准概率）
 ```
 
 ## Official skill, auto-installed

@@ -14,10 +14,11 @@ import {
   type SkillSyncResult,
 } from "./skill.js";
 
-/** /jev <文本> 的罐头试一枪问题（04 号票 Q3：只为验证 key 与链路） */
-const PROBE_QUESTION = {
-  probe: { question: "这段文本是否描述了需要立即处理的问题？" },
-};
+/** /jev <命题>：用户输入本身即待判命题；state 用固定占位（validateArgs 要求非空） */
+const PROBE_STATE = "（pi 会话直接输入，无额外上下文）";
+const buildProbeQuestions = (text: string) => ({
+  probe: { question: text },
+});
 
 /** 后台 skill 同步的最近结果：面板与 /jev-skill 都读它，别每次重跑网络 */
 let skillSnapshot: SkillSyncResult | null = null;
@@ -59,7 +60,7 @@ function renderPanel(
     `  skill:  ${skillLine()}`,
     `  把关:   ${noulLine}`,
     `  配置文件: ${CONFIG_PATH}（缺失=全默认；改后重启会话生效）`,
-    "  试一枪: /jev <任意文本>（罐头 Noul 问题，只验证 key 与链路）",
+    "  试一枪: /jev <命题>（返回该命题为真的校准概率）",
   ].join("\n");
 }
 
@@ -150,7 +151,7 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
   pi.on("session_start", (_event, ctx) => {
     notify = (text, level) => ctx.ui.notify(text, level);
     ctx.ui.notify(
-      "Jev 已挂载 —— /jev 状态面板 · /jev <文本> 试一枪 · /jev-skill 管理官方 skill",
+      "Jev 已挂载 —— /jev 状态面板 · /jev <命题> 试一枪 · /jev-skill 管理官方 skill",
       "info",
     );
     void skillSync.then((r) => {
@@ -197,7 +198,7 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
   });
 
   pi.registerCommand("jev", {
-    description: "Jev (TypeSafe System One) 状态面板；/jev <文本> 试一枪",
+    description: "Jev (TypeSafe System One) 状态面板；/jev <命题> 判真假",
     handler: async (args, ctx) => {
       const { key, source } = await resolveKey();
       if (!args.trim()) {
@@ -209,8 +210,8 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
       }
       const t0 = Date.now();
       const result: JevToolResult = await run("noul", {
-        state: args,
-        questions: PROBE_QUESTION,
+        state: PROBE_STATE,
+        questions: buildProbeQuestions(args),
       });
       const ms = Date.now() - t0;
       if ("error" in result) {
@@ -231,7 +232,7 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
       const low = a?._lowConfidence ? " · 低置信" : "";
       const quote = args.length > 20 ? `${args.slice(0, 20)}…` : args;
       ctx.ui.notify(
-        `Jev 试一枪（「${quote}」）：${pct}${low}\nkey：${source} · 输入 ${result.usage.input_tokens} / 输出 ${result.usage.output_tokens} token · ${ms}ms`,
+        `Jev 试一枪：${pct} —— 「${quote}」为真的概率${low}\nkey：${source} · 输入 ${result.usage.input_tokens} / 输出 ${result.usage.output_tokens} token · ${ms}ms`,
         "info",
       );
     },
