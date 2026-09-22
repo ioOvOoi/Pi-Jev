@@ -1,10 +1,9 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { loadConfig, CONFIG_PATH, type JevConfig } from "./config.js";
-import { resolveKey } from "./auth.js";
+import { clearAaKey, resolveAaKey, resolveKey, saveAaKey } from "./auth.js";
 import { makeRunner } from "./core.js";
 import { registerJevTools } from "./tools.js";
 import { registerTypeSafeProvider } from "./provider.js";
-import { registerNoulAuthorizer, renderNoulLine } from "./permission.js";
 import {
   SKILL_DIR,
   checkSkill,
@@ -40,7 +39,6 @@ function renderPanel(
   cfg: JevConfig,
   key: string | null,
   source: string,
-  noulLine: string,
 ): string {
   const keyLine =
     source === "missing" || !key
@@ -52,7 +50,6 @@ function renderPanel(
     `  model:  ${cfg.model}   timeout: ${cfg.timeoutMs}ms   并发: ${cfg.maxConcurrent}`,
     `  低置信: choice<${cfg.lowConfidence.choice}  score<${cfg.lowConfidence.score}  noul±${cfg.lowConfidence.noulMargin}`,
     `  skill:  ${skillLine()}`,
-    `  把关:   ${noulLine}`,
     `  配置文件: ${CONFIG_PATH}（缺失=全默认；改后重启会话生效）`,
   ].join("\n");
 }
@@ -107,10 +104,86 @@ function skillNotice(
   }
 }
 
+
+/**
+ * 02 号票：/jev aa 子命令——AA key 管理（写入/清除）。
+ * set 有 UI 时走交互输入，clear 有 UI 时先确认；非 TUI 模式退化为内联参数直行，
+ * 避免在无人可答的 print/rpc 模式弹框卡死。缺失指引由 resolveAaKey 统一给出。
+ */
+async function handleAaCommand(
+  verb: string | undefined,
+  inline: string,
+  ctx: ExtensionCommandContext,
+): Promise<void> {
+  if (verb === "clear") {
+    if (ctx.hasUI) {
+      const yes = await ctx.ui.confirm(
+        "清除 AA key",
+        "确认从 auth.json 删除 AA API key？",
+      );
+      if (!yes) {
+        ctx.ui.notify("已取消清除", "info");
+        return;
+      }
+    }
+    const removed = await clearAaKey();
+    ctx.ui.notify(
+      removed ? "AA key 已从 auth.json 清除" : "auth.json 里本来就没有 AA key",
+      "info",
+    );
+    return;
+  }
+  if (verb === "set") {
+    let input = inline.trim();
+    if (!input && ctx.hasUI) {
+      const asked = await ctx.ui.input(
+        "AA API key",
+        "免费 key 注册：artificialanalysis.ai",
+      );
+      if (asked === undefined) {
+        ctx.ui.notify("已取消写入", "info");
+        return;
+      }
+      input = asked.trim();
+    }
+    if (!input) {
+      ctx.ui.notify(
+        "未提供 AA key：非交互模式请用 /jev aa set <key>，或设环境变量 AA_API_KEY",
+        "warning",
+      );
+      return;
+    }
+    try {
+      await saveAaKey(input);
+      ctx.ui.notify("AA key 已存入 auth.json", "info");
+    } catch (e) {
+      ctx.ui.notify(
+        `写入失败：${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
+    }
+    return;
+  }
+  if (verb) {
+    ctx.ui.notify(
+      "用法：/jev aa 看状态 · /jev aa set [key] 写入 · /jev aa clear 清除",
+      "warning",
+    );
+    return;
+  }
+  const aa = await resolveAaKey();
+  ctx.ui.notify(
+    aa.key
+      ? `AA key: ✓ ${aa.source}（${aa.key.slice(0, 6)}…${aa.key.slice(-4)}）`
+      : (aa.guidance ?? "AA API key 未设置"),
+    aa.key ? "info" : "warning",
+  );
+}
+
 /**
  * Pi-Jev 扩展入口。
  * 已挂：/login Typesafe provider · jev tool（混型批量判断）· /jev 面板
- *      · 官方 skill 自动安装/更新 + /jev-skill · Noul 把关（Authorizer Chain，09 号票）。
+ *      · 官方 skill 自动安装/更新 + /jev-skill。
  */
 export default async function jev(pi: ExtensionAPI): Promise<void> {
   registerTypeSafeProvider(pi); // async 工厂：registerProvider 在启动期 flush
@@ -121,28 +194,10 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
   const run = await makeRunner(cfg, resolveKey);
   registerJevTools(pi, run);
 
-  // 09 号票：Noul 把关。注册 ≠ 生效——用户还得在权限系统 config.json 里点名链名；
-  // 服务端没装或没激活时只提示，不影响插件其余功能
-  let notify:
-    | ((text: string, level: "info" | "warning" | "error") => void)
-    | null = null;
-  const noul = registerNoulAuthorizer(pi, {
-    cfg,
-    run,
-    enabled: cfg.permission.enabled,
-    debugPath: process.env.PI_JEV_PERM_LOG,
-    onMissing: (detail) =>
-      notify?.(
-        `Jev Noul 把关未挂上：${detail}（装 @gotgenes/pi-permission-system 后重启会话）`,
-        "warning",
-      ),
-  });
-
   // 07 号票：skill 同步走网络，绝不 await 进启动路径；结果留到 session_start 里提示
   const skillSync = syncSkill();
 
   pi.on("session_start", (_event, ctx) => {
-    notify = (text, level) => ctx.ui.notify(text, level);
     void skillSync.then((r) => {
       skillSnapshot = r;
       const notice = skillNotice(r);
@@ -187,8 +242,14 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
   });
 
   pi.registerCommand("jev", {
-    description: "Jev (TypeSafe System One) 状态面板",
+    description: "Jev (TypeSafe System One) 状态面板；/jev aa 管理 AA key（02 号票）",
     handler: async (args, ctx) => {
+      // 02 号票：aa 子命令拦截在先；其它参数仍按老规则只看面板
+      const [sub, verb, ...rest] = args.trim().split(/\s+/);
+      if (sub === "aa") {
+        await handleAaCommand(verb, rest.join(" "), ctx);
+        return;
+      }
       if (args.trim())
         ctx.ui.notify(
           "/jev 只看状态。要让 Jev 判断，直接让 agent 调 jev 工具（问题自带 type）。",
@@ -196,9 +257,14 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
         );
       const { key, source } = await resolveKey();
       ctx.ui.notify(
-        renderPanel(cfg, key, source, renderNoulLine(noul.status())),
+        renderPanel(cfg, key, source),
         source === "missing" ? "warning" : "info",
       );
     },
   });
 }
+
+// 票 03（Jev × Pi-Staffs 融合路由）：公开 runner 工厂与凭据/配置解析，供宿主侧路由层跨包取判断。
+export { makeRunner } from "./core.js";
+export { loadConfig } from "./config.js";
+export { resolveKey, resolveAaKey, AA_ENV_KEY } from "./auth.js";
