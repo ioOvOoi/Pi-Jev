@@ -8,8 +8,6 @@ export interface JevConfig {
   timeoutMs: number;
   maxConcurrent: number;
   lowConfidence: { choice: number; score: number; noulMargin: number };
-  /** 09 号票：Noul 把关总开关（链名是否被权限系统点名仍由用户配置决定） */
-  permission: { enabled: boolean };
 }
 
 export const DEFAULTS: JevConfig = {
@@ -17,7 +15,6 @@ export const DEFAULTS: JevConfig = {
   timeoutMs: 30_000,
   maxConcurrent: 4,
   lowConfidence: { choice: 0.5, score: 0.5, noulMargin: 0.2 },
-  permission: { enabled: true },
 };
 
 /** 走 pi 自己的目录解析（honors PI_CODING_AGENT_DIR），别手搓 ~/.pi/agent */
@@ -39,16 +36,6 @@ const posInt = (v: unknown): number | undefined => {
   return n !== undefined && Number.isInteger(n) && n >= 1 ? n : undefined;
 };
 
-/** env 开关：只认明确的真/假词，脏值当没写（别让 "abc" 变 truthy） */
-const bool = (v: string | undefined): boolean | undefined =>
-  v === undefined
-    ? undefined
-    : /^(1|true|on|yes)$/i.test(v)
-      ? true
-      : /^(0|false|off|no)$/i.test(v)
-        ? false
-        : undefined;
-
 /**
  * 04 号票 Q6：配置文件显式字段 > env(PI_JEV_*) > 内置默认；文件缺失=全默认。
  * key 不在此链（见 auth.ts）。opts.path 仅为测试注入，生产走 CONFIG_PATH。
@@ -62,8 +49,6 @@ export async function loadConfig(
   cfg.timeoutMs = env("PI_JEV_TIMEOUT") ?? cfg.timeoutMs;
   cfg.maxConcurrent =
     posInt(Number(process.env.PI_JEV_MAX_CONCURRENT)) ?? cfg.maxConcurrent;
-  cfg.permission.enabled =
-    bool(process.env.PI_JEV_PERMISSION) ?? cfg.permission.enabled;
   try {
     const file = JSON.parse(
       await readFile(opts.path ?? CONFIG_PATH, "utf8"),
@@ -78,8 +63,6 @@ export async function loadConfig(
       cfg.lowConfidence.noulMargin =
         frac(lc.noulMargin) ?? cfg.lowConfidence.noulMargin;
     }
-    if (typeof file.permission?.enabled === "boolean")
-      cfg.permission.enabled = file.permission.enabled;
   } catch {
     // 文件缺失或坏 JSON = 全默认，正常路径
   }

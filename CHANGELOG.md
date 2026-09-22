@@ -2,6 +2,12 @@
 
 All notable changes to Pi-Jev. Format follows [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Removed
+
+- **Noul permission gate**: the `@gotgenes/pi-permission-system` authorizer-chain integration is gone — `src/permission.ts` and its tests deleted, the `permission` config key, `PI_JEV_PERMISSION` / `PI_JEV_PERM_LOG` env vars, and the panel's 把关 line dropped. The `noul` question type and `lowConfidence.noulMargin` are unaffected.
+
 ## [0.1.3] — 2026-09-17
 
 ### Changed

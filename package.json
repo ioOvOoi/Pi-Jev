@@ -1,7 +1,7 @@
 {
   "name": "pi-jev",
   "version": "0.1.3",
-  "description": "TypeSafe Jev (System One) decision tools for pi: calibrated noul/choice/score questions, /jev panel, auto-installed official skill, and Noul as a permission authorizer.",
+  "description": "TypeSafe Jev (System One) decision tools for pi: calibrated noul/choice/score questions, /jev panel, and auto-installed official skill.",
   "type": "module",
   "main": "./src/index.ts",
   "keywords": [

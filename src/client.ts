@@ -80,7 +80,7 @@ export function mapSdkError(e: unknown): JevError {
   return err("network", String((e as { message?: unknown })?.message ?? e));
 }
 
-/** 并发闸：公开端点约 8 并发上限，04 号票 Q5 默认 4，给 permission 链留余量 */
+/** 并发闸：公开端点约 8 并发上限，04 号票 Q5 默认 4 */
 export class Semaphore {
   private running = 0;
   private readonly waiters: (() => void)[] = [];

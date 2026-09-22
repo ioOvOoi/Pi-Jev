@@ -1,6 +1,6 @@
 # Pi-Jev
 
-Bring **TypeSafe Jev (System One)** — a calibrated, non-generative decision model — into [pi](https://github.com/earendil-works/pi). Three typed decision tools, a `/jev` panel, the official TypeSafe skill auto-installed and auto-updated, and Noul as a permission-chain authorizer.
+Bring **TypeSafe Jev (System One)** — a calibrated, non-generative decision model — into [pi](https://github.com/earendil-works/pi). Three typed decision tools, a `/jev` panel, and the official TypeSafe skill auto-installed and auto-updated.
 
 **中文文档 → [README.zh-CN.md](README.zh-CN.md)**
 
@@ -93,7 +93,7 @@ A single `jev` tool, **batched and mixed-type**: one `state` plus a map of quest
 
 | Command | What it does |
 |---|---|
-| `/jev` | Status panel: key source, model, permission-chain state, skill state, config path |
+| `/jev` | Status panel: key source, model, skill state, config path |
 | `/jev-skill` | Official skill status |
 | `/jev-skill check` | Compare local skill against upstream (`up-to-date` / `update-available`) |
 | `/jev-skill update` | Force sync from upstream |
@@ -105,7 +105,6 @@ Jev (TypeSafe System One) 状态
    key:    ✓ auth.json（apikey…3ba9）
    model:  jev-latest   timeout: 30000ms
    skill:  ✓ 已是最新 65a39f3
-   把关:   已挂链 jev-noul（会话 1） · 激活状态未知 · 最近：无
    配置文件: ~/.pi/agent/pi-jev.json（缺失=全默认；改后重启会话生效）
 ```
 
@@ -130,8 +129,7 @@ Optional file `~/.pi/agent/pi-jev.json` (missing or malformed = all defaults):
   "model": "jev-latest",
   "timeoutMs": 30000,
   "maxConcurrent": 4,
-  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 },
-  "permission": { "enabled": true }
+  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 }
 }
 ```
 
@@ -142,32 +140,22 @@ Priority: **explicit config field > environment variable > built-in default** (t
 | `PI_JEV_MODEL` | Model name |
 | `PI_JEV_TIMEOUT` | Request timeout (ms) |
 | `PI_JEV_MAX_CONCURRENT` | Batch concurrency cap |
-| `PI_JEV_PERMISSION` | `1/true/on/yes` or `0/false/off/no` to enable/disable Noul gating |
 | `TYPESAFE_API_KEY` | Credential fallback |
 
 Dirty values (`PI_JEV_TIMEOUT=abc`) are ignored rather than poisoning the config.
-
-## Noul as a permission authorizer
-
-With [`@gotgenes/pi-permission-system`](https://www.npmjs.com/package/@gotgenes/pi-permission-system) installed, the plugin registers Noul as a link in the **Authorizer Chain**. It is consulted only when a request reaches the `ask` state *and* the chain names it:
-
-- probability more than `margin` away from 0.5 → `allow` / `deny`
-- low confidence, or Jev unavailable (no key / timeout) → `defer`, handing the decision back to the original chain — **it never silently lets something through**
-
-To activate it, add `Noul` to the permission system's `authorizerChain` and keep `permission.enabled` (or `PI_JEV_PERMISSION=1`). Registration alone does not gate anything; the panel shows whether the chain actually named it.
 
 ## Maintenance & CI
 
 - **No build artifacts**: the entry point is TypeScript, executed by pi. Nothing to publish, nothing to go stale.
 - **Auto-update**: installed from `git:…@main`, `pi update --extensions` re-fetches and re-installs dependencies.
-- **CI** (`.github/workflows/ci.yml`) runs on every push/PR: typecheck + the 30 unit tests (fake HTTP endpoint, no API key needed) + `npm pack --dry-run` to validate the published file list.
+- **CI** (`.github/workflows/ci.yml`) runs on every push/PR: typecheck + the 21 unit tests (fake HTTP endpoint, no API key needed) + `npm pack --dry-run` to validate the published file list.
 
 ## Development
 
 ```bash
 npm install
 npm run typecheck   # tsc, 0 errors expected
-npm test            # 30 tests via tsx --test, no network, no key
+npm test            # 21 tests via tsx --test, no network, no key
 npm run smoke:live  # real endpoint: one batch call per tool (needs a key)
 npm run smoke:skill # real network: upstream skill check/sync
 ```
@@ -176,7 +164,7 @@ Layout:
 
 ```
 src/            index.ts (extension entry) · client.ts (SDK) · core.ts (runner) · tools.ts ·
-                config.ts · auth.ts · provider.ts (/login provider) · skill.ts · permission.ts
+                config.ts · auth.ts · provider.ts (/login provider) · skill.ts
 test/           unit tests + fake-endpoint.ts (no network)
 scripts/        smoke:live / smoke:skill probes
 docs/wayfinder/ the decision map and its 9 tickets

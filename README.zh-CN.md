@@ -1,6 +1,6 @@
 # Pi-Jev
 
-把 **TypeSafe Jev（System One）**——一个校准过的、不生成文本的决策模型——接进 [pi](https://github.com/earendil-works/pi)。三个类型化决策工具、`/jev` 面板、官方 TypeSafe skill 自动安装与更新，以及让 Noul 在权限链上把关。
+把 **TypeSafe Jev（System One）**——一个校准过的、不生成文本的决策模型——接进 [pi](https://github.com/earendil-works/pi)。三个类型化决策工具、`/jev` 面板，以及官方 TypeSafe skill 自动安装与更新。
 
 **English docs → [README.md](README.md)**
 
@@ -93,7 +93,7 @@ key 走 pi 原生凭证链，**永不进配置文件**：
 
 | 命令 | 作用 |
 |---|---|
-| `/jev` | 状态面板：key 来源、模型、权限链、skill 状态、配置路径 |
+| `/jev` | 状态面板：key 来源、模型、skill 状态、配置路径 |
 | `/jev-skill` | 官方 skill 状态 |
 | `/jev-skill check` | 与上游比对（`up-to-date` / `update-available`） |
 | `/jev-skill update` | 强制与上游同步 |
@@ -105,7 +105,6 @@ Jev (TypeSafe System One) 状态
    key:    ✓ auth.json（apikey…3ba9）
    model:  jev-latest   timeout: 30000ms
    skill:  ✓ 已是最新 65a39f3
-   把关:   已挂链 jev-noul（会话 1） · 激活状态未知 · 最近：无
    配置文件: ~/.pi/agent/pi-jev.json（缺失=全默认；改后重启会话生效）
 ```
 
@@ -130,8 +129,7 @@ Jev (TypeSafe System One) 状态
   "model": "jev-latest",
   "timeoutMs": 30000,
   "maxConcurrent": 4,
-  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 },
-  "permission": { "enabled": true }
+  "lowConfidence": { "choice": 0.5, "score": 0.5, "noulMargin": 0.2 }
 }
 ```
 
@@ -142,32 +140,22 @@ Jev (TypeSafe System One) 状态
 | `PI_JEV_MODEL` | 模型名 |
 | `PI_JEV_TIMEOUT` | 请求超时（ms） |
 | `PI_JEV_MAX_CONCURRENT` | 批量并发上限 |
-| `PI_JEV_PERMISSION` | `1/true/on/yes` 或 `0/false/off/no` 开关 Noul 把关 |
 | `TYPESAFE_API_KEY` | key 兜底 |
 
 脏值（`PI_JEV_TIMEOUT=abc`）会被忽略，而不是把配置污染成 NaN。
-
-## Noul 把关（权限链）
-
-装了 [`@gotgenes/pi-permission-system`](https://www.npmjs.com/package/@gotgenes/pi-permission-system) 后，插件把 Noul 注册成 **Authorizer Chain** 的一环。只有当请求进入 `ask` 态、且链上点名它时才会被咨询：
-
-- 概率离 0.5 超过 `margin` → `allow` / `deny`
-- 低置信，或 Jev 不可用（无 key / 超时）→ `defer`，把决定交回原链——**绝不静默放行**
-
-要生效：把 `Noul` 加进权限系统的 `authorizerChain`，并保持 `permission.enabled`（或 `PI_JEV_PERMISSION=1`）。光注册不会拦任何东西；面板会显示链上是否真的点了名。
 
 ## 维护与 CI
 
 - **没有构建产物**：入口是 TypeScript，由 pi 直接执行；不存在发不发、陈不陈的 `dist`。
 - **自动更新**：以 `git:…@main` 安装后，`pi update --extensions` 会重新拉取并安装依赖。
-- **CI**（`.github/workflows/ci.yml`）：每次 push/PR 跑 typecheck + 30 项单测（假 HTTP 端点，不需要 key）+ `npm pack --dry-run` 校验发布文件清单。
+- **CI**（`.github/workflows/ci.yml`）：每次 push/PR 跑 typecheck + 21 项单测（假 HTTP 端点，不需要 key）+ `npm pack --dry-run` 校验发布文件清单。
 
 ## 开发
 
 ```bash
 npm install
 npm run typecheck   # tsc，期望 0 错
-npm test            # tsx --test 跑 30 项，不走网络、不需要 key
+npm test            # tsx --test 跑 21 项，不走网络、不需要 key
 npm run smoke:live  # 真端点：三种形态各一发（需要 key）
 npm run smoke:skill # 真网络：上游 skill check/sync
 ```
@@ -176,7 +164,7 @@ npm run smoke:skill # 真网络：上游 skill check/sync
 
 ```
 src/            index.ts（扩展入口）· client.ts（SDK）· core.ts（runner）· tools.ts ·
-                config.ts · auth.ts · provider.ts（/login provider）· skill.ts · permission.ts
+                config.ts · auth.ts · provider.ts（/login provider）· skill.ts
 test/           单测 + fake-endpoint.ts（不走网络）
 scripts/        smoke:live / smoke:skill 探针
 docs/wayfinder/ 决策地图与 9 张票
