@@ -10,7 +10,7 @@ import {
   readSkillState,
   syncSkill,
   type SkillState,
-} from "../src/skill.js";
+} from "../src/skill.ts";
 
 // ---------------------------------------------------------------------------
 // 造一个真 tar（长路径走 pax 扩展头）+ gzip：不引第三方依赖，也不依赖本机 tar

@@ -5,7 +5,7 @@ import {
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { TYPESAFE_PROVIDER_ID } from "./provider.js";
+import { TYPESAFE_PROVIDER_ID } from "./provider.ts";
 
 /** 04 号票：key 永远来自 pi 凭据库或 TYPESAFE_API_KEY，绝不进配置文件 */
 export type KeySource = "auth.json" | "env" | "missing";

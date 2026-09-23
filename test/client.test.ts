@@ -13,9 +13,9 @@ import {
   TypeSafeError,
   UnprocessableEntityError,
 } from "@typesafe-ai/sdk";
-import { createJevClient, mapSdkError, Semaphore } from "../src/client.js";
-import { DEFAULTS } from "../src/config.js";
-import { startFakeTypeSafe } from "./fake-endpoint.js";
+import { createJevClient, mapSdkError, Semaphore } from "../src/client.ts";
+import { DEFAULTS } from "../src/config.ts";
+import { startFakeTypeSafe } from "./fake-endpoint.ts";
 
 const h = new Headers({ "x-typesafe-request-id": "req_1" });
 

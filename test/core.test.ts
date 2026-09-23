@@ -6,9 +6,9 @@ import {
   toSdkQuestion,
   validateArgs,
   makeRunner,
-} from "../src/core.js";
-import { DEFAULTS } from "../src/config.js";
-import { startFakeTypeSafe } from "./fake-endpoint.js";
+} from "../src/core.ts";
+import { DEFAULTS } from "../src/config.ts";
+import { startFakeTypeSafe } from "./fake-endpoint.ts";
 
 const ok = (answers: Record<string, unknown>) => ({
   model: "jev-latest",

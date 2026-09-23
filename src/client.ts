@@ -13,7 +13,7 @@ import {
   UnprocessableEntityError,
 } from "@typesafe-ai/sdk";
 import type { EntryType, Questions, SystemOneRequest } from "@typesafe-ai/sdk";
-import type { JevConfig } from "./config.js";
+import type { JevConfig } from "./config.ts";
 
 /** 04 号票拍板：错误与成功同构，永不 throw 给 agent */
 export type JevErrorCode =
@@ -82,9 +82,14 @@ export function mapSdkError(e: unknown): JevError {
 
 /** 并发闸：公开端点约 8 并发上限，04 号票 Q5 默认 4 */
 export class Semaphore {
+  private readonly max: number;
   private running = 0;
   private readonly waiters: (() => void)[] = [];
-  constructor(private readonly max: number) {}
+  // 参数属性（constructor(private readonly max)）会让 node strip-types 拒载——
+  // 手动展开字段赋值，语义不变（pi-staffs 宿主靠 strip-types 直载本包）。
+  constructor(max: number) {
+    this.max = max;
+  }
   async withLock<T>(fn: () => Promise<T>): Promise<T> {
     while (this.running >= this.max)
       await new Promise<void>((resolve) => this.waiters.push(resolve));

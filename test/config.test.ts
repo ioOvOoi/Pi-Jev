@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadConfig, DEFAULTS } from "../src/config.js";
+import { loadConfig, DEFAULTS } from "../src/config.ts";
 
 const tmp = await mkdtemp(join(tmpdir(), "pi-jev-cfg-"));
 const withFile = async (content: unknown, name: string) => {

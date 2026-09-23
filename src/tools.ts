@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import type { JevToolArgs, JevToolResult } from "./core.js";
+import type { JevToolArgs, JevToolResult } from "./core.ts";
 
 /** Jev 不生成文本、不做对话：state 由调用方显式给出（04 号票 Q2） */
 const STATE = Type.Unknown({

@@ -1,9 +1,9 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import { loadConfig, CONFIG_PATH, type JevConfig } from "./config.js";
-import { clearAaKey, resolveAaKey, resolveKey, saveAaKey } from "./auth.js";
-import { makeRunner } from "./core.js";
-import { registerJevTools } from "./tools.js";
-import { registerTypeSafeProvider } from "./provider.js";
+import { loadConfig, CONFIG_PATH, type JevConfig } from "./config.ts";
+import { clearAaKey, resolveAaKey, resolveKey, saveAaKey } from "./auth.ts";
+import { makeRunner } from "./core.ts";
+import { registerJevTools } from "./tools.ts";
+import { registerTypeSafeProvider } from "./provider.ts";
 import {
   SKILL_DIR,
   checkSkill,
@@ -11,7 +11,7 @@ import {
   syncSkill,
   type SkillState,
   type SkillSyncResult,
-} from "./skill.js";
+} from "./skill.ts";
 
 /** 后台 skill 同步的最近结果：面板与 /jev-skill 都读它，别每次重跑网络 */
 let skillSnapshot: SkillSyncResult | null = null;
@@ -265,6 +265,6 @@ export default async function jev(pi: ExtensionAPI): Promise<void> {
 }
 
 // 票 03（Jev × Pi-Staffs 融合路由）：公开 runner 工厂与凭据/配置解析，供宿主侧路由层跨包取判断。
-export { makeRunner } from "./core.js";
-export { loadConfig } from "./config.js";
-export { resolveKey, resolveAaKey, AA_ENV_KEY } from "./auth.js";
+export { makeRunner } from "./core.ts";
+export { loadConfig } from "./config.ts";
+export { resolveKey, resolveAaKey, AA_ENV_KEY } from "./auth.ts";

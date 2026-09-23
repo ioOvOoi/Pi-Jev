@@ -12,9 +12,9 @@ import {
   err,
   type JevClientHandle,
   type JevError,
-} from "./client.js";
-import type { JevConfig } from "./config.js";
-import type { KeySource } from "./auth.js";
+} from "./client.ts";
+import type { JevConfig } from "./config.ts";
+import type { KeySource } from "./auth.ts";
 
 export type JevType = "noul" | "choice" | "score";
 

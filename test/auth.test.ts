@@ -10,7 +10,7 @@ import {
   clearAaKey,
   resolveAaKey,
   saveAaKey,
-} from "../src/auth.js";
+} from "../src/auth.ts";
 
 const tmp = await mkdtemp(join(tmpdir(), "pi-jev-aa-"));
 let seq = 0;
