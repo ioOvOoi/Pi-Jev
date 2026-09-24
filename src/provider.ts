@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createProvider } from "@earendil-works/pi-ai";
-// 0.85.1 根导出没有 openAICompletionsApi，只有 lazy 子路径导出（pi 文档示例针对更新版本）
-import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
+// pi 扩展加载器把 pi-ai 根与 /compat 都别名到宿主 compat 入口（strict superset）；深层 /api/* 会被别名吞成 <compat.js>/api/... 导致加载即崩，故统一走 /compat。
+import { openAICompletionsApi } from "@earendil-works/pi-ai/compat";
 
 /** TypeSafe 平台 API 根（02 号票：单端点 POST /v1/systemone） */
 export const TYPESAFE_BASE_URL = "https://api.typesafe.ai/v1";
